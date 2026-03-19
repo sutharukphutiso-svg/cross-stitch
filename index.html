@@ -172,12 +172,12 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
       <div class="section-title">Stitch Size</div>
       <div class="section-body">
         <div class="ctrl">
-          <div class="ctrl-label"><span>กว้าง × สูง</span><span class="val" id="sz-v">40 × 40</span></div>
-          <input type="range" id="sz" min="10" max="150" value="40" step="5" oninput="onSzChange()">
+          <div class="ctrl-label"><span>เธเธงเนเธฒเธ ร— เธชเธนเธ</span><span class="val" id="sz-v">40 ร— 40</span></div>
+          <input type="range" id="sz" min="10" max="200" value="40" step="5" oninput="onSzChange()">
         </div>
         <div class="checkbox-row" style="margin-top:4px">
           <input type="checkbox" id="sq-lock" checked>
-          <label for="sq-lock">ล็อกสัดส่วนสี่เหลี่ยม</label>
+          <label for="sq-lock">เธฅเนเธญเธเธชเธฑเธ”เธชเนเธงเธเธชเธตเนเน€เธซเธฅเธตเนเธขเธก</label>
         </div>
       </div>
     </div>
@@ -187,7 +187,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
       <div class="section-title">Max Colors</div>
       <div class="section-body">
         <div class="ctrl">
-          <div class="ctrl-label"><span>จำนวนสี</span><span class="val" id="nc-v">16</span></div>
+          <div class="ctrl-label"><span>เธเธณเธเธงเธเธชเธต</span><span class="val" id="nc-v">16</span></div>
           <input type="range" id="nc" min="2" max="32" value="16" step="1" oninput="document.getElementById('nc-v').textContent=this.value;if(refImgEl.src&&refImgEl.style.display!=='none')convertRef()">
         </div>
       </div>
@@ -205,7 +205,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
           <option value="28">Evenweave 28 ct</option>
           <option value="32">Evenweave 32 ct</option>
         </select>
-        <div class="fabric-badge" id="fabric-cm">— × — cm</div>
+        <div class="fabric-badge" id="fabric-cm">โ€” ร— โ€” cm</div>
         <div class="ctrl" style="margin-top:8px">
           <div class="checkbox-row">
             <input type="checkbox" id="show-grid" checked onchange="render()">
@@ -225,8 +225,8 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
       <div class="section-body">
         <div class="palette-grid" id="palette-grid"></div>
         <div style="margin-top:8px;display:flex;gap:4px">
-          <button class="btn sm" onclick="addCustomColor()">+ เพิ่มสี</button>
-          <button class="btn sm danger" onclick="clearUnused()">ลบสีไม่ใช้</button>
+          <button class="btn sm" onclick="addCustomColor()">+ เน€เธเธดเนเธกเธชเธต</button>
+          <button class="btn sm danger" onclick="clearUnused()">เธฅเธเธชเธตเนเธกเนเนเธเน</button>
         </div>
       </div>
     </div>
@@ -236,11 +236,11 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
       <div class="section-title">Actions</div>
       <div class="section-body">
         <div class="btn-row" style="margin-bottom:6px">
-          <button class="btn sm" onclick="undo()">↩ Undo</button>
-          <button class="btn sm danger" onclick="clearCanvas()">🗑 Clear</button>
+          <button class="btn sm" onclick="undo()">โฉ Undo</button>
+          <button class="btn sm danger" onclick="clearCanvas()">๐—‘ Clear</button>
         </div>
-        <button class="btn primary" style="width:100%;margin-bottom:4px" onclick="exportPNG()">⬇ Export PNG</button>
-        <button class="btn" style="width:100%" onclick="exportSymbol()">📋 Export แผนผัง</button>
+        <button class="btn primary" style="width:100%;margin-bottom:4px" onclick="exportPNG()">โฌ Export PNG</button>
+        <button class="btn" style="width:100%" onclick="exportSymbol()">๐“ Export เนเธเธเธเธฑเธ</button>
       </div>
     </div>
 
@@ -249,14 +249,14 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
       <div class="section-title">Reference Image</div>
       <div class="section-body">
         <div id="drop-ref" onclick="document.getElementById('ref-file').click()">
-          <div style="font-size:20px">🖼</div>
-          <div>ลากรูปมาวาง หรือคลิกเพื่อเลือก</div>
-          <div style="font-size:10px;margin-top:2px">รูปจะถูกแปลงเป็นลายปักอัตโนมัติ</div>
+          <div style="font-size:20px">๐–ผ</div>
+          <div>เธฅเธฒเธเธฃเธนเธเธกเธฒเธงเธฒเธ เธซเธฃเธทเธญเธเธฅเธดเธเน€เธเธทเนเธญเน€เธฅเธทเธญเธ</div>
+          <div style="font-size:10px;margin-top:2px">เธฃเธนเธเธเธฐเธ–เธนเธเนเธเธฅเธเน€เธเนเธเธฅเธฒเธขเธเธฑเธเธญเธฑเธ•เนเธเธกเธฑเธ•เธด</div>
         </div>
         <img id="ref-preview">
         <input type="file" id="ref-file" accept="image/*" style="display:none">
         <div id="ref-btns" style="display:none;margin-top:6px">
-          <button class="btn sm primary" onclick="convertRef()" style="width:100%">🔄 แปลงใหม่</button>
+          <button class="btn sm primary" onclick="convertRef()" style="width:100%">๐” เนเธเธฅเธเนเธซเธกเน</button>
         </div>
       </div>
     </div>
@@ -265,7 +265,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
     <div class="section">
       <div class="section-title">History</div>
       <div class="section-body">
-        <div id="history-list"><div style="color:var(--muted)">ยังไม่มีประวัติ</div></div>
+        <div id="history-list"><div style="color:var(--muted)">เธขเธฑเธเนเธกเนเธกเธตเธเธฃเธฐเธงเธฑเธ•เธด</div></div>
       </div>
     </div>
 
@@ -277,18 +277,18 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
 
   <!-- Toolbar -->
   <div id="toolbar">
-    <button class="btn sm tool-btn active" id="t-move" onclick="setTool('move',this)" title="เลื่อนภาพ (M)">✋ Move</button>
-    <button class="btn sm tool-btn" id="t-paint" onclick="setTool('paint',this)" title="วาด (P)">✏️ Paint</button>
-    <button class="btn sm tool-btn" id="t-erase" onclick="setTool('erase',this)" title="ลบ (E)">⬜ Erase</button>
-    <button class="btn sm tool-btn" id="t-fill" onclick="setTool('fill',this)" title="เติมสี (F)">🪣 Fill</button>
-    <button class="btn sm tool-btn" id="t-pick" onclick="setTool('pick',this)" title="เลือกสี (K)">💉 Pick</button>
-    <button class="btn sm tool-btn" id="t-line" onclick="setTool('line',this)" title="วาดเส้น (L)">📏 Line</button>
-    <button class="btn sm tool-btn" id="t-select" onclick="setTool('select',this)" title="เลือกพื้นที่ (S)">⬛ Select</button>
+    <button class="btn sm tool-btn active" id="t-move" onclick="setTool('move',this)" title="เน€เธฅเธทเนเธญเธเธ เธฒเธ (M)">โ Move</button>
+    <button class="btn sm tool-btn" id="t-paint" onclick="setTool('paint',this)" title="เธงเธฒเธ” (P)">โ๏ธ Paint</button>
+    <button class="btn sm tool-btn" id="t-erase" onclick="setTool('erase',this)" title="เธฅเธ (E)">โฌ Erase</button>
+    <button class="btn sm tool-btn" id="t-fill" onclick="setTool('fill',this)" title="เน€เธ•เธดเธกเธชเธต (F)">๐ชฃ Fill</button>
+    <button class="btn sm tool-btn" id="t-pick" onclick="setTool('pick',this)" title="เน€เธฅเธทเธญเธเธชเธต (K)">๐’ Pick</button>
+    <button class="btn sm tool-btn" id="t-line" onclick="setTool('line',this)" title="เธงเธฒเธ”เน€เธชเนเธ (L)">๐“ Line</button>
+    <button class="btn sm tool-btn" id="t-select" onclick="setTool('select',this)" title="เน€เธฅเธทเธญเธเธเธทเนเธเธ—เธตเน (S)">โฌ Select</button>
     <div class="tb-sep"></div>
     <button class="btn sm" onclick="zoom(1.25)">+</button>
     <div class="zoom-info" id="zoom-pct">100%</div>
-    <button class="btn sm" onclick="zoom(0.8)">−</button>
-    <button class="btn sm" onclick="resetZoom()">⊡ Reset</button>
+    <button class="btn sm" onclick="zoom(0.8)">โ’</button>
+    <button class="btn sm" onclick="resetZoom()">โก Reset</button>
   </div>
 
   <!-- Canvas -->
@@ -301,11 +301,11 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
 
   <!-- Status bar -->
   <div id="status-bar">
-    <div class="status-item">เครื่องมือ: <b id="st-tool">Move</b></div>
-    <div class="status-item">ตำแหน่ง: <b id="st-pos">—</b></div>
-    <div class="status-item">ขนาด: <b id="st-size">— × —</b></div>
-    <div class="status-item">Stitches: <b id="st-stitches">—</b></div>
-    <div class="status-item" style="margin-left:auto">สีที่เลือก: <span id="st-color" style="display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;border:1px solid #ccc;background:#fff;margin-right:3px"></span><b id="st-color-hex">—</b></div>
+    <div class="status-item">เน€เธเธฃเธทเนเธญเธเธกเธทเธญ: <b id="st-tool">Move</b></div>
+    <div class="status-item">เธ•เธณเนเธซเธเนเธ: <b id="st-pos">โ€”</b></div>
+    <div class="status-item">เธเธเธฒเธ”: <b id="st-size">โ€” ร— โ€”</b></div>
+    <div class="status-item">Stitches: <b id="st-stitches">โ€”</b></div>
+    <div class="status-item" style="margin-left:auto">เธชเธตเธ—เธตเนเน€เธฅเธทเธญเธ: <span id="st-color" style="display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;border:1px solid #ccc;background:#fff;margin-right:3px"></span><b id="st-color-hex">โ€”</b></div>
   </div>
 
 </div>
@@ -313,17 +313,17 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
 
 <!-- Color picker popup -->
 <div id="color-picker-wrap">
-  <div style="font-size:12px;color:var(--muted);margin-bottom:6px">เลือกสี</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:6px">เน€เธฅเธทเธญเธเธชเธต</div>
   <input type="color" id="color-picker" oninput="onPickerChange()">
   <input type="text" id="color-hex-input" placeholder="#ffffff" onchange="onHexInput()" maxlength="7">
   <div style="display:flex;gap:4px;margin-top:8px">
-    <button class="btn sm primary" onclick="confirmColor()" style="flex:1">ตกลง</button>
-    <button class="btn sm" onclick="closeColorPicker()" style="flex:1">ยกเลิก</button>
+    <button class="btn sm primary" onclick="confirmColor()" style="flex:1">เธ•เธเธฅเธ</button>
+    <button class="btn sm" onclick="closeColorPicker()" style="flex:1">เธขเธเน€เธฅเธดเธ</button>
   </div>
 </div>
 
 <script>
-const SYMBOLS=['×','○','△','□','◆','★','●','♦','▲','■','✚','◉','▼','✦','◈','❖','⬡','⬢','✿','❋','⊕','⊗','⊙','◐','◑','◒','◓','◧','◨','⬟','⬣','❂'];
+const SYMBOLS=['ร—','โ—','โ–ณ','โ–ก','โ—','โ…','โ—','โฆ','โ–ฒ','โ– ','โ','โ—','โ–ผ','โฆ','โ—','โ–','โฌก','โฌข','โฟ','โ','โ•','โ—','โ','โ—','โ—‘','โ—’','โ—“','โ—ง','โ—จ','โฌ','โฌฃ','โ'];
 
 // State
 let cols=40,rows=40,cellSz=14,zoomLevel=1;
@@ -352,7 +352,7 @@ function initGrid(){
 function onSzChange(){
   const v=parseInt(document.getElementById('sz').value);
   cols=v;rows=v;
-  document.getElementById('sz-v').textContent=`${v} × ${v}`;
+  document.getElementById('sz-v').textContent=`${v} ร— ${v}`;
   grid=Array.from({length:rows},()=>new Array(cols).fill(-1));
   gc.width=cols*cellSz;gc.height=rows*cellSz;
   ov.width=gc.width;ov.height=gc.height;
@@ -491,7 +491,7 @@ area.addEventListener('mousedown',e=>{
 
 area.addEventListener('mousemove',e=>{
   const [c,r]=getCell(e);
-  document.getElementById('st-pos').textContent=inBounds(c,r)?`${c+1}, ${r+1}`:'—';
+  document.getElementById('st-pos').textContent=inBounds(c,r)?`${c+1}, ${r+1}`:'โ€”';
   if(tool==='move'&&isPainting&&panStart){
     panOffset={x:e.clientX-panStart.x,y:e.clientY-panStart.y};
     wrap.style.left=panOffset.x+'px';wrap.style.top=panOffset.y+'px';
@@ -516,7 +516,7 @@ area.addEventListener('mouseup',e=>{
   isPainting=false;
 });
 
-area.addEventListener('mouseleave',()=>{isPainting=false;document.getElementById('st-pos').textContent='—';});
+area.addEventListener('mouseleave',()=>{isPainting=false;document.getElementById('st-pos').textContent='โ€”';});
 
 // Scroll to zoom
 area.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.1:0.9);},{passive:false});
@@ -548,7 +548,7 @@ function undo(){
 }
 function updateHistoryUI(){
   const el=document.getElementById('history-list');
-  if(!history.length){el.innerHTML='<div style="color:var(--muted)">ยังไม่มีประวัติ</div>';return;}
+  if(!history.length){el.innerHTML='<div style="color:var(--muted)">เธขเธฑเธเนเธกเนเธกเธตเธเธฃเธฐเธงเธฑเธ•เธด</div>';return;}
   el.innerHTML=[...historyLabels].reverse().slice(0,6).map((l,i)=>`<div>#${historyLabels.length-i}: ${l}</div>`).join('');
 }
 
@@ -563,13 +563,13 @@ function updatePaletteUI(){
   const el=document.getElementById('palette-grid');
   el.innerHTML=palette.map((hex,i)=>
     `<div class="swatch${i===selColor?' selected':''}" style="background:${hex}" title="${hex}" onclick="selColor=${i};updatePaletteUI();updateSelColorStatus()" ondblclick="editColor(${i})"></div>`
-  ).join('')+`<div class="swatch-add" onclick="addCustomColor()" title="เพิ่มสี">+</div>`;
-  document.getElementById('pal-count').textContent=palette.length+' สี';
+  ).join('')+`<div class="swatch-add" onclick="addCustomColor()" title="เน€เธเธดเนเธกเธชเธต">+</div>`;
+  document.getElementById('pal-count').textContent=palette.length+' เธชเธต';
   updateSelColorStatus();
 }
 
 function updateSelColorStatus(){
-  const hex=palette[selColor]||'—';
+  const hex=palette[selColor]||'โ€”';
   document.getElementById('st-color').style.background=hex;
   document.getElementById('st-color-hex').textContent=hex;
 }
@@ -685,11 +685,11 @@ function rgbToHex(r,g,b){return`#${r.toString(16).padStart(2,'0')}${g.toString(1
 
 // Status
 function updateStatus(){
-  document.getElementById('st-size').textContent=`${cols} × ${rows}`;
+  document.getElementById('st-size').textContent=`${cols} ร— ${rows}`;
   document.getElementById('st-stitches').textContent=(cols*rows).toLocaleString();
   const ct=parseInt(document.getElementById('fabric').value);
   const w=(cols/ct*2.54).toFixed(1),h=(rows/ct*2.54).toFixed(1);
-  document.getElementById('fabric-cm').textContent=`${w} × ${h} cm`;
+  document.getElementById('fabric-cm').textContent=`${w} ร— ${h} cm`;
 }
 
 // Export
@@ -710,7 +710,7 @@ function exportSymbol(){
   ex.font='bold 14px serif';ex.fillStyle='#333';
   ex.fillText('Cross Stitch Pattern',10,20);
   ex.font='11px sans-serif';ex.fillStyle='#666';
-  ex.fillText(`${cols}×${rows} stitches | ${parseInt(document.getElementById('fabric').value)}ct`,10,36);
+  ex.fillText(`${cols}ร—${rows} stitches | ${parseInt(document.getElementById('fabric').value)}ct`,10,36);
   // grid
   for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
