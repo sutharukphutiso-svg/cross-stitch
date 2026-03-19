@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross Stitch Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f4ef;
+  --panel:#fff;
+  --border:#e2ddd6;
+  --text:#1a1714;
+  --muted:#8a847c;
+  --accent:#2d6a4f;
+  --accent2:#74c69d;
+  --danger:#c0392b;
+  --canvas-bg:#e8e4dc;
+  --shadow:0 1px 3px rgba(0,0,0,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+
+/* Layout */
+#app{display:flex;height:100vh}
+#sidebar{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#toolbar{height:44px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:6px;flex-shrink:0}
+#canvas-area{flex:1;overflow:hidden;position:relative;background:var(--canvas-bg);cursor:crosshair}
+#canvas-wrap{position:absolute;transform-origin:0 0}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+#status-bar{height:26px;background:var(--panel);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0}
+
+/* Sidebar */
+#sidebar-header{padding:14px 14px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+#sidebar-header h1{font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);line-height:1}
+#sidebar-header p{font-size:11px;color:var(--muted);margin-top:2px}
+#sidebar-body{flex:1;overflow-y:auto;padding:10px}
+#sidebar-body::-webkit-scrollbar{width:4px}
+#sidebar-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.section{margin-bottom:10px}
+.section-title{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+.section-body{background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--border)}
+
+/* Controls */
+.ctrl{margin-bottom:8px}
+.ctrl:last-child{margin-bottom:0}
+.ctrl-label{display:flex;justify-content:space-between;margin-bottom:3px}
+.ctrl-label span:first-child{color:var(--muted)}
+.ctrl-label .val{font-weight:500;color:var(--text)}
+input[type=range]{
+  width:100%;height:4px;-webkit-appearance:none;appearance:none;
+  background:var(--border);border-radius:2px;outline:none;cursor:pointer
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:2px solid #fff;
+  box-shadow:0 0 0 1px var(--accent)
+}
+select{
+  width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;
+  background:var(--panel);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none
+}
+select:focus{border-color:var(--accent)}
+.checkbox-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text)}
+input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
+
+/* Tool grid */
+.tool-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.tool-btn{
+  padding:6px 4px;font-size:11px;font-family:'DM Sans',sans-serif;
+  border:1px solid var(--border);border-radius:6px;
+  background:var(--panel);cursor:pointer;color:var(--muted);
+  transition:all 0.15s;text-align:center;line-height:1.2
+}
+.tool-btn:hover{background:var(--bg);color:var(--text)}
+.tool-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Palette */
+.palette-grid{display:flex;flex-wrap:wrap;gap:4px;max-height:130px;overflow-y:auto}
+.swatch{
+  width:24px;height:24px;border-radius:4px;cursor:pointer;
+  border:2px solid transparent;transition:transform 0.1s;position:relative
+}
+.swatch:hover{transform:scale(1.1)}
+.swatch.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.swatch-add{
+  width:24px;height:24px;border-radius:4px;cursor:pointer;
+  border:1.5px dashed var(--border);display:flex;align-items:center;
+  justify-content:center;color:var(--muted);font-size:16px;line-height:1;
+  transition:all 0.15s
+}
+.swatch-add:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Buttons */
+.btn{
+  padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;
+  border:1px solid var(--border);border-radius:6px;background:var(--panel);
+  cursor:pointer;color:var(--text);transition:all 0.15s;white-space:nowrap
+}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:#245a42}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.danger:hover{background:#fdf0ef}
+.btn.sm{padding:4px 8px;font-size:11px}
+.btn-row{display:flex;gap:4px;flex-wrap:wrap}
+
+/* Toolbar */
+.tb-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
+.zoom-info{font-size:11px;color:var(--muted);min-width:38px;text-align:center}
+
+/* Drop zone */
+#drop-ref{
+  border:1.5px dashed var(--border);border-radius:8px;padding:12px;
+  text-align:center;cursor:pointer;color:var(--muted);font-size:11px;
+  transition:all 0.2s;line-height:1.5
+}
+#drop-ref:hover{border-color:var(--accent);color:var(--accent);background:#f0f7f4}
+#drop-ref.drag-over{border-color:var(--accent);background:#f0f7f4}
+#ref-preview{max-width:100%;border-radius:6px;margin-top:8px;display:none;border:1px solid var(--border)}
+
+/* Status bar */
+.status-item{font-size:11px;color:var(--muted)}
+.status-item b{color:var(--text);font-weight:500}
+
+/* Color picker popup */
+#color-picker-wrap{
+  display:none;position:fixed;z-index:1000;background:var(--panel);
+  border:1px solid var(--border);border-radius:10px;padding:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.12);width:200px
+}
+#color-picker-wrap input[type=color]{width:100%;height:36px;border:none;border-radius:6px;cursor:pointer;padding:0}
+#color-picker-wrap input[type=text]{
+  width:100%;margin-top:6px;padding:5px 8px;border:1px solid var(--border);
+  border-radius:6px;font-size:12px;font-family:monospace;color:var(--text)
+}
+
+/* Fabric size badge */
+.fabric-badge{
+  display:inline-block;background:#f0f7f4;color:var(--accent);
+  border:1px solid var(--accent2);border-radius:4px;padding:2px 6px;
+  font-size:11px;margin-top:4px
+}
+
+/* History list */
+#history-list{max-height:80px;overflow-y:auto;font-size:11px;color:var(--muted)}
+#history-list div{padding:2px 0;border-bottom:1px solid var(--border)}
+#history-list div:last-child{border:none}
+
+/* Mobile warning */
+@media(max-width:600px){
+  #sidebar{width:180px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h1>Cross Stitch</h1>
+    <p>Studio</p>
+  </div>
+  <div id="sidebar-body">
+
+    <!-- Stitch Size -->
+    <div class="section">
+      <div class="section-title">Stitch Size</div>
+      <div class="section-body">
+        <div class="ctrl">
+          <div class="ctrl-label"><span>Width × Height</span><span class="val" id="sz-v">40 × 40</span></div>
+          <input type="range" id="sz" min="10" max="200" value="40" step="5" oninput="onSzChange()">
+        </div>
+        <div class="checkbox-row" style="margin-top:4px">
+          <input type="checkbox" id="sq-lock" checked>
+          <label for="sq-lock">Lock square ratio</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colors -->
+    <div class="section">
+      <div class="section-title">Max Colors</div>
+      <div class="section-body">
+        <div class="ctrl">
+          <div class="ctrl-label"><span>Colors</span><span class="val" id="nc-v">16</span></div>
+          <input type="range" id="nc" min="2" max="32" value="16" step="1" oninput="document.getElementById('nc-v').textContent=this.value;if(refImgEl.src&&refImgEl.style.display!=='none')convertRef()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Fabric -->
+    <div class="section">
+      <div class="section-title">Fabric</div>
+      <div class="section-body">
+        <select id="fabric" onchange="updateStatus()">
+          <option value="11">Aida 11 ct</option>
+          <option value="14" selected>Aida 14 ct</option>
+          <option value="16">Aida 16 ct</option>
+          <option value="18">Aida 18 ct</option>
+          <option value="28">Evenweave 28 ct</option>
+          <option value="32">Evenweave 32 ct</option>
+        </select>
+        <div class="fabric-badge" id="fabric-cm">— × — cm</div>
+        <div class="ctrl" style="margin-top:8px">
+          <div class="checkbox-row">
+            <input type="checkbox" id="show-grid" checked onchange="render()">
+            <label for="show-grid">Show Grid</label>
+          </div>
+          <div class="checkbox-row" style="margin-top:4px">
+            <input type="checkbox" id="show-sym" checked onchange="render()">
+            <label for="show-sym">Show Symbols</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Palette -->
+    <div class="section">
+      <div class="section-title">Palette <span id="pal-count" style="float:right;color:var(--text);font-weight:500">0</span></div>
+      <div class="section-body">
+        <div class="palette-grid" id="palette-grid"></div>
+        <div style="margin-top:8px;display:flex;gap:4px">
+          <button class="btn sm" onclick="addCustomColor()">+ Add color</button>
+          <button class="btn sm danger" onclick="clearUnused()">Remove unused</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="section">
+      <div class="section-title">Actions</div>
+      <div class="section-body">
+        <div class="btn-row" style="margin-bottom:6px">
+          <button class="btn sm" onclick="undo()">Undo</button>
+          <button class="btn sm danger" onclick="clearCanvas()">Clear</button>
+        </div>
+        <button class="btn primary" style="width:100%;margin-bottom:4px" onclick="exportPNG()">Export PNG</button>
+        <button class="btn" style="width:100%" onclick="exportSymbol()">Export Chart</button>
+      </div>
+    </div>
+
+    <!-- Reference -->
+    <div class="section">
+      <div class="section-title">Reference Image</div>
+      <div class="section-body">
+        <div id="drop-ref" onclick="document.getElementById('ref-file').click()">
+          <div style="font-size:20px">[img]</div>
+          <div>Drag & drop or click to select</div>
+          <div style="font-size:10px;margin-top:2px">Image will auto-convert to pattern</div>
+        </div>
+        <img id="ref-preview">
+        <input type="file" id="ref-file" accept="image/*" style="display:none">
+        <div id="ref-btns" style="display:none;margin-top:6px">
+          <button class="btn sm primary" onclick="convertRef()" style="width:100%">Re-convert</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="section">
+      <div class="section-title">History</div>
+      <div class="section-body">
+        <div id="history-list"><div style="color:var(--muted)">No history yet</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <button class="btn sm tool-btn active" id="t-move" onclick="setTool('move',this)" title="Pan (M)">Move</button>
+    <button class="btn sm tool-btn" id="t-paint" onclick="setTool('paint',this)" title="Draw (P)">Paint</button>
+    <button class="btn sm tool-btn" id="t-erase" onclick="setTool('erase',this)" title="Erase (E)">Erase</button>
+    <button class="btn sm tool-btn" id="t-fill" onclick="setTool('fill',this)" title="Fill (F)">Fill</button>
+    <button class="btn sm tool-btn" id="t-pick" onclick="setTool('pick',this)" title="Pick color (K)">Pick</button>
+    <button class="btn sm tool-btn" id="t-line" onclick="setTool('line',this)" title="Draw line (L)">Line</button>
+    <button class="btn sm tool-btn" id="t-select" onclick="setTool('select',this)" title="Select area (S)">Select</button>
+    <div class="tb-sep"></div>
+    <button class="btn sm" onclick="zoom(1.25)">+</button>
+    <div class="zoom-info" id="zoom-pct">100%</div>
+    <button class="btn sm" onclick="zoom(0.8)">−</button>
+    <button class="btn sm" onclick="resetZoom()">Reset</button>
+  </div>
+
+  <!-- Canvas -->
+  <div id="canvas-area">
+    <div id="canvas-wrap">
+      <canvas id="gc"></canvas>
+      <canvas id="overlay" style="position:absolute;top:0;left:0;pointer-events:none"></canvas>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div id="status-bar">
+    <div class="status-item">Tool: <b id="st-tool">Move</b></div>
+    <div class="status-item">Position: <b id="st-pos">—</b></div>
+    <div class="status-item">Size: <b id="st-size">— × —</b></div>
+    <div class="status-item">Stitches: <b id="st-stitches">—</b></div>
+    <div class="status-item" style="margin-left:auto">Selected: <span id="st-color" style="display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;border:1px solid #ccc;background:#fff;margin-right:3px"></span><b id="st-color-hex">—</b></div>
+  </div>
+
+</div>
+</div>
+
+<!-- Color picker popup -->
+<div id="color-picker-wrap">
+  <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Pick color</div>
+  <input type="color" id="color-picker" oninput="onPickerChange()">
+  <input type="text" id="color-hex-input" placeholder="#ffffff" onchange="onHexInput()" maxlength="7">
+  <div style="display:flex;gap:4px;margin-top:8px">
+    <button class="btn sm primary" onclick="confirmColor()" style="flex:1">OK</button>
+    <button class="btn sm" onclick="closeColorPicker()" style="flex:1">Cancel</button>
+  </div>
+</div>
+
+<script>
+const SYMBOLS=['×','○','△','□','◆','','●','','▲','■','','◉','▼','','◈','','⬡','⬢','','','⊕','⊗','⊙','◐','◑','◒','◓','◧','◨','⬟','⬣',''];
+
+// State
+let cols=40,rows=40,cellSz=14,zoomLevel=1;
+let grid=[],palette=[],selColor=0,tool='move';
+let history=[],historyLabels=[];
+let isPainting=false,panStart=null,panOffset={x:0,y:0};
+let lineStart=null,selectRect=null,selectDrag=false;
+let pickerTarget=-1;// -1=new, >=0=edit index
+let refLoaded=false;
+
+const gc=document.getElementById('gc');
+const ctx=gc.getContext('2d');
+const ov=document.getElementById('overlay');
+const octx=ov.getContext('2d');
+const wrap=document.getElementById('canvas-wrap');
+const area=document.getElementById('canvas-area');
+const refImgEl=document.getElementById('ref-preview');
+
+function initGrid(){
+  grid=Array.from({length:rows},()=>new Array(cols).fill(-1));
+  gc.width=cols*cellSz;gc.height=rows*cellSz;
+  ov.width=gc.width;ov.height=gc.height;
+  updateStatus();render();
+}
+
+function onSzChange(){
+  const v=parseInt(document.getElementById('sz').value);
+  cols=v;rows=v;
+  document.getElementById('sz-v').textContent=`${v} × ${v}`;
+  grid=Array.from({length:rows},()=>new Array(cols).fill(-1));
+  gc.width=cols*cellSz;gc.height=rows*cellSz;
+  ov.width=gc.width;ov.height=gc.height;
+  updateStatus();render();
+}
+
+function render(){
+  const showGrid=document.getElementById('show-grid').checked;
+  const showSym=document.getElementById('show-sym').checked;
+  ctx.clearRect(0,0,gc.width,gc.height);
+  // bg
+  ctx.fillStyle='#f0ece3';ctx.fillRect(0,0,gc.width,gc.height);
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const ci=grid[r][c];
+      if(ci>=0&&ci<palette.length){
+        const col=palette[ci];
+        ctx.fillStyle=col;
+        ctx.fillRect(c*cellSz,r*cellSz,cellSz,cellSz);
+        if(showSym&&cellSz>=8){
+          const rgb=hexToRgb(col);
+          const lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
+          ctx.fillStyle=lum>140?'rgba(0,0,0,0.55)':'rgba(255,255,255,0.75)';
+          ctx.font=`${Math.max(6,cellSz-4)}px monospace`;
+          ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText(SYMBOLS[ci%SYMBOLS.length],c*cellSz+cellSz/2,r*cellSz+cellSz/2);
+        }
+      }
+      if(showGrid){
+        ctx.strokeStyle='rgba(100,100,100,0.15)';ctx.lineWidth=0.5;
+        ctx.strokeRect(c*cellSz,r*cellSz,cellSz,cellSz);
+      }
+    }
+  }
+  // 10-stitch guides
+  if(showGrid&&cellSz>=5){
+    ctx.strokeStyle='rgba(60,60,60,0.3)';ctx.lineWidth=1;
+    for(let r=0;r<=rows;r+=10){ctx.beginPath();ctx.moveTo(0,r*cellSz);ctx.lineTo(cols*cellSz,r*cellSz);ctx.stroke();}
+    for(let c=0;c<=cols;c+=10){ctx.beginPath();ctx.moveTo(c*cellSz,0);ctx.lineTo(c*cellSz,rows*cellSz);ctx.stroke();}
+  }
+  // selection overlay
+  if(selectRect){
+    octx.clearRect(0,0,ov.width,ov.height);
+    const {x,y,w,h}=selectRect;
+    octx.strokeStyle='rgba(45,106,79,0.9)';octx.lineWidth=1.5;
+    octx.setLineDash([4,3]);
+    octx.strokeRect(x*cellSz,y*cellSz,w*cellSz,h*cellSz);
+    octx.setLineDash([]);
+    octx.fillStyle='rgba(45,106,79,0.08)';
+    octx.fillRect(x*cellSz,y*cellSz,w*cellSz,h*cellSz);
+  } else {
+    octx.clearRect(0,0,ov.width,ov.height);
+  }
+}
+
+// Tools
+function setTool(t,btn){
+  tool=t;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const cursors={move:'grab',paint:'crosshair',erase:'cell',fill:'crosshair',pick:'crosshair',line:'crosshair',select:'default'};
+  area.style.cursor=cursors[t]||'crosshair';
+  document.getElementById('st-tool').textContent=btn.textContent.trim();
+}
+
+function zoom(f){
+  zoomLevel=Math.min(10,Math.max(0.15,zoomLevel*f));
+  wrap.style.transform=`scale(${zoomLevel})`;
+  document.getElementById('zoom-pct').textContent=Math.round(zoomLevel*100)+'%';
+}
+function resetZoom(){zoomLevel=1;wrap.style.transform='scale(1)';panOffset={x:0,y:0};wrap.style.left='0';wrap.style.top='0';document.getElementById('zoom-pct').textContent='100%';}
+
+function getCell(e){
+  const wr=wrap.getBoundingClientRect();
+  const x=(e.clientX-wr.left)/zoomLevel,y=(e.clientY-wr.top)/zoomLevel;
+  return [Math.floor(x/cellSz),Math.floor(y/cellSz)];
+}
+function inBounds(c,r){return c>=0&&c<cols&&r>=0&&r<rows;}
+
+function paintCell(c,r){
+  if(!inBounds(c,r))return false;
+  if(tool==='erase'){if(grid[r][c]===-1)return false;grid[r][c]=-1;return true;}
+  if(tool==='paint'){if(selColor<0||selColor>=palette.length)return false;if(grid[r][c]===selColor)return false;grid[r][c]=selColor;return true;}
+  return false;
+}
+
+function floodFill(sc,sr,oldIdx,newIdx){
+  if(oldIdx===newIdx)return;
+  const stack=[[sc,sr]];
+  while(stack.length){
+    const [c,r]=stack.pop();
+    if(!inBounds(c,r)||grid[r][c]!==oldIdx)continue;
+    grid[r][c]=newIdx;
+    stack.push([c+1,r],[c-1,r],[c,r+1],[c,r-1]);
+  }
+}
+
+function drawLine(x0,y0,x1,y1){
+  const dx=Math.abs(x1-x0),dy=Math.abs(y1-y0);
+  const sx=x0<x1?1:-1,sy=y0<y1?1:-1;
+  let err=dx-dy;
+  while(true){
+    if(inBounds(x0,y0)&&selColor>=0&&selColor<palette.length)grid[y0][x0]=selColor;
+    if(x0===x1&&y0===y1)break;
+    const e2=2*err;
+    if(e2>-dy){err-=dy;x0+=sx;}
+    if(e2<dx){err+=dx;y0+=sy;}
+  }
+}
+
+// Mouse events
+area.addEventListener('mousedown',e=>{
+  const [c,r]=getCell(e);
+  if(tool==='move'){
+    isPainting=true;
+    area.style.cursor='grabbing';
+    panStart={x:e.clientX-panOffset.x,y:e.clientY-panOffset.y};
+    return;
+  }
+  if(tool==='pick'){
+    if(inBounds(c,r)&&grid[r][c]>=0){selColor=grid[r][c];updatePaletteUI();updateSelColorStatus();}
+    return;
+  }
+  if(tool==='fill'){
+    if(!inBounds(c,r))return;
+    pushHistory('Fill');
+    floodFill(c,r,grid[r][c],selColor);
+    render();return;
+  }
+  if(tool==='line'){lineStart=[c,r];return;}
+  if(tool==='select'){selectRect={x:c,y:r,w:0,h:0};selectDrag=true;return;}
+  pushHistory(tool==='erase'?'Erase':'Paint');
+  isPainting=true;
+  paintCell(c,r);render();
+});
+
+area.addEventListener('mousemove',e=>{
+  const [c,r]=getCell(e);
+  document.getElementById('st-pos').textContent=inBounds(c,r)?`${c+1}, ${r+1}`:'—';
+  if(tool==='move'&&isPainting&&panStart){
+    panOffset={x:e.clientX-panStart.x,y:e.clientY-panStart.y};
+    wrap.style.left=panOffset.x+'px';wrap.style.top=panOffset.y+'px';
+    return;
+  }
+  if(tool==='select'&&selectDrag&&selectRect){
+    selectRect.w=c-selectRect.x+1;selectRect.h=r-selectRect.y+1;
+    render();return;
+  }
+  if(isPainting&&(tool==='paint'||tool==='erase')){paintCell(c,r);render();}
+});
+
+area.addEventListener('mouseup',e=>{
+  const [c,r]=getCell(e);
+  if(tool==='line'&&lineStart){
+    pushHistory('Line');
+    drawLine(lineStart[0],lineStart[1],c,r);
+    lineStart=null;render();
+  }
+  if(tool==='move')area.style.cursor='grab';
+  if(tool==='select')selectDrag=false;
+  isPainting=false;
+});
+
+area.addEventListener('mouseleave',()=>{isPainting=false;document.getElementById('st-pos').textContent='—';});
+
+// Scroll to zoom
+area.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.1:0.9);},{passive:false});
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  const map={m:'move',p:'paint',e:'erase',f:'fill',k:'pick',l:'line',s:'select'};
+  if(map[e.key.toLowerCase()]){
+    const id='t-'+map[e.key.toLowerCase()];
+    const btn=document.getElementById(id);
+    if(btn)setTool(map[e.key.toLowerCase()],btn);
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
+  if(e.key==='Escape'){selectRect=null;render();}
+});
+
+// History
+function pushHistory(label='Edit'){
+  history.push(grid.map(r=>[...r]));
+  historyLabels.push(label);
+  if(history.length>40){history.shift();historyLabels.shift();}
+  updateHistoryUI();
+}
+function undo(){
+  if(!history.length)return;
+  grid=history.pop();historyLabels.pop();
+  updateHistoryUI();render();
+}
+function updateHistoryUI(){
+  const el=document.getElementById('history-list');
+  if(!history.length){el.innerHTML='<div style="color:var(--muted)">No history yet</div>';return;}
+  el.innerHTML=[...historyLabels].reverse().slice(0,6).map((l,i)=>`<div>#${historyLabels.length-i}: ${l}</div>`).join('');
+}
+
+function clearCanvas(){
+  pushHistory('Clear');
+  grid=Array.from({length:rows},()=>new Array(cols).fill(-1));
+  selectRect=null;render();
+}
+
+// Palette
+function updatePaletteUI(){
+  const el=document.getElementById('palette-grid');
+  el.innerHTML=palette.map((hex,i)=>
+    `<div class="swatch${i===selColor?' selected':''}" style="background:${hex}" title="${hex}" onclick="selColor=${i};updatePaletteUI();updateSelColorStatus()" ondblclick="editColor(${i})"></div>`
+  ).join('')+`<div class="swatch-add" onclick="addCustomColor()" title="Add color">+</div>`;
+  document.getElementById('pal-count').textContent=palette.length+' colors';
+  updateSelColorStatus();
+}
+
+function updateSelColorStatus(){
+  const hex=palette[selColor]||'—';
+  document.getElementById('st-color').style.background=hex;
+  document.getElementById('st-color-hex').textContent=hex;
+}
+
+function clearUnused(){
+  const used=new Set();
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(grid[r][c]>=0)used.add(grid[r][c]);
+  const newPal=palette.filter((_,i)=>used.has(i));
+  const remap=new Array(palette.length).fill(-1);
+  let ni=0;
+  for(let i=0;i<palette.length;i++)if(used.has(i))remap[i]=ni++;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(grid[r][c]>=0)grid[r][c]=remap[grid[r][c]];
+  palette=newPal;
+  selColor=Math.min(selColor,palette.length-1);
+  updatePaletteUI();render();
+}
+
+// Color picker
+let tempColor='#ffffff';
+function addCustomColor(){pickerTarget=-1;openColorPicker('#ffffff');}
+function editColor(i){pickerTarget=i;openColorPicker(palette[i]);}
+function openColorPicker(hex){
+  const el=document.getElementById('color-picker-wrap');
+  const cp=document.getElementById('color-picker');
+  cp.value=hex;
+  document.getElementById('color-hex-input').value=hex;
+  el.style.display='block';
+  el.style.top='80px';el.style.right='12px';
+}
+function closeColorPicker(){document.getElementById('color-picker-wrap').style.display='none';}
+function onPickerChange(){
+  const v=document.getElementById('color-picker').value;
+  document.getElementById('color-hex-input').value=v;
+}
+function onHexInput(){
+  let v=document.getElementById('color-hex-input').value.trim();
+  if(!v.startsWith('#'))v='#'+v;
+  if(/^#[0-9a-fA-F]{6}$/.test(v))document.getElementById('color-picker').value=v;
+}
+function confirmColor(){
+  const hex=document.getElementById('color-picker').value;
+  if(pickerTarget===-1){
+    palette.push(hex);
+    selColor=palette.length-1;
+  } else {
+    palette[pickerTarget]=hex;
+  }
+  updatePaletteUI();render();closeColorPicker();
+}
+document.addEventListener('click',e=>{
+  const el=document.getElementById('color-picker-wrap');
+  if(el.style.display==='block'&&!el.contains(e.target)&&!e.target.classList.contains('swatch-add')&&!e.target.classList.contains('swatch'))closeColorPicker();
+});
+
+// Reference image
+const dropRef=document.getElementById('drop-ref');
+document.getElementById('ref-file').onchange=e=>loadRef(e.target.files[0]);
+dropRef.addEventListener('dragover',e=>{e.preventDefault();dropRef.classList.add('drag-over')});
+dropRef.addEventListener('dragleave',()=>dropRef.classList.remove('drag-over'));
+dropRef.addEventListener('drop',e=>{e.preventDefault();dropRef.classList.remove('drag-over');loadRef(e.dataTransfer.files[0])});
+
+let refImgSource=null;
+function loadRef(f){
+  if(!f||!f.type.startsWith('image/'))return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    refImgSource=new Image();
+    refImgSource.onload=()=>{
+      refImgEl.src=ev.target.result;
+      refImgEl.style.display='block';
+      document.getElementById('ref-btns').style.display='block';
+      refLoaded=true;
+      convertRef();
+    };
+    refImgSource.src=ev.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function convertRef(){
+  if(!refImgSource)return;
+  const nc=parseInt(document.getElementById('nc').value);
+  const tmp=document.createElement('canvas');
+  tmp.width=cols;tmp.height=rows;
+  const tx=tmp.getContext('2d');
+  tx.drawImage(refImgSource,0,0,cols,rows);
+  const pix=tx.getImageData(0,0,cols,rows).data;
+  const pixels=[];
+  for(let i=0;i<rows;i++){pixels.push([]);for(let j=0;j<cols;j++){const idx=(i*cols+j)*4;pixels[i].push([pix[idx],pix[idx+1],pix[idx+2]]);}}
+  palette=kMeans(pixels.flat(),nc).map(([r,g,b])=>rgbToHex(Math.round(r),Math.round(g),Math.round(b)));
+  pushHistory('Convert Image');
+  grid=pixels.map(row=>row.map(px=>nearestColorHex(px,palette)));
+  selColor=0;
+  updatePaletteUI();updateStatus();render();
+}
+
+// K-means
+function kMeans(pixels,k){
+  // Median Cut: better color diversity regardless of area
+  const sample = pixels.length > 4000
+    ? pixels.filter((_,i) => i % Math.floor(pixels.length/4000) === 0)
+    : pixels;
+
+  function medianCut(pts, depth){
+    if(depth === 0 || pts.length === 0) return [avgColor(pts)];
+    // Find channel with largest range
+    let minR=255,maxR=0,minG=255,maxG=0,minB=255,maxB=0;
+    for(const p of pts){
+      if(p[0]<minR)minR=p[0];if(p[0]>maxR)maxR=p[0];
+      if(p[1]<minG)minG=p[1];if(p[1]>maxG)maxG=p[1];
+      if(p[2]<minB)minB=p[2];if(p[2]>maxB)maxB=p[2];
+    }
+    const rR=maxR-minR, rG=maxG-minG, rB=maxB-minB;
+    const ch = rR>=rG && rR>=rB ? 0 : rG>=rB ? 1 : 2;
+    pts.sort((a,b)=>a[ch]-b[ch]);
+    const mid=Math.floor(pts.length/2);
+    return [...medianCut(pts.slice(0,mid),depth-1), ...medianCut(pts.slice(mid),depth-1)];
+  }
+
+  function avgColor(pts){
+    if(!pts.length) return [128,128,128];
+    const s=[0,0,0];
+    for(const p of pts){s[0]+=p[0];s[1]+=p[1];s[2]+=p[2];}
+    return [s[0]/pts.length, s[1]/pts.length, s[2]/pts.length];
+  }
+
+  // Median cut gives 2^n colors, get closest power of 2 >= k
+  const depth = Math.ceil(Math.log2(k));
+  let centers = medianCut([...sample], depth);
+
+  // If we got more than k, pick k most spread ones
+  while(centers.length > k){
+    // merge closest pair
+    let minD=Infinity, mi=0, mj=1;
+    for(let i=0;i<centers.length;i++)
+      for(let j=i+1;j<centers.length;j++){
+        const d=(centers[i][0]-centers[j][0])**2+(centers[i][1]-centers[j][1])**2+(centers[i][2]-centers[j][2])**2;
+        if(d<minD){minD=d;mi=i;mj=j;}
+      }
+    const merged=[(centers[mi][0]+centers[mj][0])/2,(centers[mi][1]+centers[mj][1])/2,(centers[mi][2]+centers[mj][2])/2];
+    centers.splice(mj,1);centers.splice(mi,1,merged);
+  }
+
+  // Refine with a few k-means iterations
+  for(let iter=0;iter<10;iter++){
+    const sums=Array.from({length:centers.length},()=>[0,0,0,0]);
+    for(const p of sample){
+      const c=nearestRgb(p,centers);
+      sums[c][0]+=p[0];sums[c][1]+=p[1];sums[c][2]+=p[2];sums[c][3]++;
+    }
+    centers=sums.map((s,i)=>s[3]?[s[0]/s[3],s[1]/s[3],s[2]/s[3]]:centers[i]);
+  }
+  return centers;
+}
+
+function nearestRgb(px,palette){let best=0,bd=Infinity;for(let i=0;i<palette.length;i++){const d=(px[0]-palette[i][0])**2+(px[1]-palette[i][1])**2+(px[2]-palette[i][2])**2;if(d<bd){bd=d;best=i;}}return best;}
+function nearestColorHex(px,palette){let best=0,bd=Infinity;for(let i=0;i<palette.length;i++){const rgb=hexToRgb(palette[i]);if(!rgb)continue;const d=(px[0]-rgb[0])**2+(px[1]-rgb[1])**2+(px[2]-rgb[2])**2;if(d<bd){bd=d;best=i;}}return best;}
+
+function hexToRgb(hex){const m=hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:null;}
+function rgbToHex(r,g,b){return`#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;}
+
+// Status
+function updateStatus(){
+  document.getElementById('st-size').textContent=`${cols} × ${rows}`;
+  document.getElementById('st-stitches').textContent=(cols*rows).toLocaleString();
+  const ct=parseInt(document.getElementById('fabric').value);
+  const w=(cols/ct*2.54).toFixed(1),h=(rows/ct*2.54).toFixed(1);
+  document.getElementById('fabric-cm').textContent=`${w} × ${h} cm`;
+}
+
+// Export
+function exportPNG(){
+  const a=document.createElement('a');
+  a.download='cross-stitch-pattern.png';
+  a.href=gc.toDataURL();a.click();
+}
+
+function exportSymbol(){
+  // Create symbol chart canvas
+  const sz=16,padding=60;
+  const W=cols*sz+padding,H=rows*sz+padding+80;
+  const ec=document.createElement('canvas');
+  ec.width=W;ec.height=H;
+  const ex=ec.getContext('2d');
+  ex.fillStyle='#fff';ex.fillRect(0,0,W,H);
+  ex.font='bold 14px serif';ex.fillStyle='#333';
+  ex.fillText('Cross Stitch Pattern',10,20);
+  ex.font='11px sans-serif';ex.fillStyle='#666';
+  ex.fillText(`${cols}×${rows} stitches | ${parseInt(document.getElementById('fabric').value)}ct`,10,36);
+  // grid
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const ci=grid[r][c];
+      const px=padding/2+c*sz,py=50+r*sz;
+      if(ci>=0&&ci<palette.length){
+        ex.fillStyle=palette[ci];
+        ex.fillRect(px,py,sz,sz);
+        const rgb=hexToRgb(palette[ci]);
+        const lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
+        ex.fillStyle=lum>140?'#000':'#fff';
+        ex.font=`${sz-4}px monospace`;ex.textAlign='center';ex.textBaseline='middle';
+        ex.fillText(SYMBOLS[ci%SYMBOLS.length],px+sz/2,py+sz/2);
+      }
+      ex.strokeStyle='rgba(0,0,0,0.15)';ex.lineWidth=0.5;
+      ex.strokeRect(px,py,sz,sz);
+    }
+  }
+  // legend
+  let lx=10,ly=50+rows*sz+16;
+  ex.font='11px sans-serif';ex.fillStyle='#333';ex.textAlign='left';ex.textBaseline='alphabetic';
+  ex.fillText('Legend:',lx,ly);lx+=50;
+  palette.forEach((hex,i)=>{
+    ex.fillStyle=hex;ex.fillRect(lx,ly-10,14,14);
+    ex.strokeStyle='#ccc';ex.lineWidth=0.5;ex.strokeRect(lx,ly-10,14,14);
+    ex.fillStyle='#222';ex.font='10px monospace';
+    ex.fillText(SYMBOLS[i%SYMBOLS.length],lx+7,ly);
+    lx+=20;
+    if(lx>W-30){lx=60;ly+=18;}
+  });
+  const a=document.createElement('a');
+  a.download='cross-stitch-symbol-chart.png';
+  a.href=ec.toDataURL();a.click();
+}
+
+// Init
+initGrid();updateStatus();updatePaletteUI();
+</script>
+</body>
+</html>
