@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross Stitch Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f4ef;--panel:#fff;--border:#e2ddd6;--text:#1a1714;--muted:#8a847c;--accent:#2d6a4f;--accent2:#74c69d;--danger:#c0392b;--canvas-bg:#e8e4dc;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+#app{display:flex;height:100vh}
+#sidebar{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#toolbar{height:44px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:5px;flex-shrink:0;flex-wrap:wrap}
+#canvas-area{flex:1;overflow:hidden;position:relative;background:var(--canvas-bg);cursor:crosshair}
+#canvas-wrap{position:absolute;top:0;left:0;width:100%;height:100%}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;position:absolute;top:0;left:0}
+#status-bar{height:26px;background:var(--panel);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0}
+#sidebar-header{padding:14px 14px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+#sidebar-header h1{font-family:"DM Serif Display",serif;font-size:18px;color:var(--text);line-height:1}
+#sidebar-header p{font-size:11px;color:var(--muted);margin-top:2px}
+#sidebar-body{flex:1;overflow-y:auto;padding:10px}
+#sidebar-body::-webkit-scrollbar{width:4px}
+#sidebar-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.section{margin-bottom:10px}
+.section-title{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+.section-body{background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--border)}
+.ctrl{margin-bottom:8px}.ctrl:last-child{margin-bottom:0}
+.ctrl-label{display:flex;justify-content:space-between;margin-bottom:3px}
+.ctrl-label span:first-child{color:var(--muted)}.val{font-weight:500;color:var(--text)}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:var(--border);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px var(--accent)}
+select{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--panel);color:var(--text);font-size:12px;font-family:"DM Sans",sans-serif;outline:none}
+.checkbox-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text)}
+input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
+.tool-btn{padding:6px 10px;font-size:11px;font-family:"DM Sans",sans-serif;border:1px solid var(--border);border-radius:6px;background:var(--panel);cursor:pointer;color:var(--muted);transition:all 0.15s}
+.tool-btn:hover{background:var(--bg);color:var(--text)}
+.tool-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.palette-grid{display:flex;flex-wrap:wrap;gap:4px;max-height:130px;overflow-y:auto}
+.swatch{width:24px;height:24px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:transform 0.1s;position:relative}
+.swatch:hover{transform:scale(1.1)}
+.swatch.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.btn{padding:7px 12px;font-size:12px;font-family:"DM Sans",sans-serif;border:1px solid var(--border);border-radius:6px;background:var(--panel);cursor:pointer;color:var(--text);transition:all 0.15s;white-space:nowrap}
+.btn:hover{background:var(--bg)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:#245a42}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.danger:hover{background:#fdf0ef}
+.btn.sm{padding:4px 8px;font-size:11px}
+.btn-row{display:flex;gap:4px;flex-wrap:wrap}
+.zoom-info{font-size:11px;color:var(--muted);min-width:38px;text-align:center}
+#drop-ref{border:1.5px dashed var(--border);border-radius:8px;padding:12px;text-align:center;cursor:pointer;color:var(--muted);font-size:11px;transition:all 0.2s;line-height:1.5}
+#drop-ref:hover{border-color:var(--accent);color:var(--accent);background:#f0f7f4}
+#ref-preview{max-width:100%;border-radius:6px;margin-top:8px;display:none;border:1px solid var(--border)}
+.status-item{font-size:11px;color:var(--muted)}
+.status-item b{color:var(--text);font-weight:500}
+#color-picker-wrap{display:none;position:fixed;z-index:1000;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);width:200px}
+#color-picker-wrap input[type=color]{width:100%;height:36px;border:none;border-radius:6px;cursor:pointer;padding:0}
+#color-picker-wrap input[type=text]{width:100%;margin-top:6px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;color:var(--text)}
+.fabric-badge{display:inline-block;background:#f0f7f4;color:var(--accent);border:1px solid var(--accent2);border-radius:4px;padding:2px 6px;font-size:11px;margin-top:4px}
+#history-list{max-height:80px;overflow-y:auto;font-size:11px;color:var(--muted)}
+#history-list div{padding:2px 0;border-bottom:1px solid var(--border)}
+.dmc-item{display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px}
+.dmc-dot{width:16px;height:16px;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,0.1)}
+.dmc-info{flex:1;min-width:0}
+.dmc-num{font-weight:500;color:var(--text)}
+.dmc-name{color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmc-count{color:var(--muted);font-size:10px;flex-shrink:0}
+#dmc-list{max-height:200px;overflow-y:auto;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h1>Cross Stitch</h1>
+    <p>Studio</p>
+  </div>
+  <div id="sidebar-body">
+
+    <div class="section">
+      <div class="section-title">Stitch Size</div>
+      <div class="section-body">
+        <div class="ctrl">
+          <div class="ctrl-label"><span>Width x Height</span><span class="val" id="sz-v">40 x 40</span></div>
+          <input type="range" id="sz" min="10" max="200" value="40" step="5" oninput="onSzChange()">
+        </div>
+        <div class="checkbox-row" style="margin-top:4px">
+          <input type="checkbox" id="sq-lock" checked>
+          <label for="sq-lock">Lock square ratio</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Max Colors</div>
+      <div class="section-body">
+        <div class="ctrl">
+          <div class="ctrl-label"><span>Colors</span><span class="val" id="nc-v">16</span></div>
+          <input type="range" id="nc" min="2" max="32" value="16" step="1" oninput="document.getElementById('nc-v').textContent=this.value;if(refImgSource)convertRef()">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Background</div>
+      <div class="section-body">
+        <div class="ctrl">
+          <div class="ctrl-label"><span>Remove light bg</span><span class="val" id="bg-v">220</span></div>
+          <input type="range" id="bg-thresh" min="0" max="255" value="220" step="5" oninput="document.getElementById('bg-v').textContent=this.value;if(refImgSource)convertRef()">
+        </div>
+        <div style="font-size:11px;color:var(--muted)">0=keep all | 255=remove all light</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Fabric</div>
+      <div class="section-body">
+        <select id="fabric" onchange="updateStatus()">
+          <option value="11">Aida 11 ct</option>
+          <option value="14" selected>Aida 14 ct</option>
+          <option value="16">Aida 16 ct</option>
+          <option value="18">Aida 18 ct</option>
+          <option value="28">Evenweave 28 ct</option>
+          <option value="32">Evenweave 32 ct</option>
+        </select>
+        <div class="fabric-badge" id="fabric-cm">-- x -- cm</div>
+        <div style="margin-top:8px">
+          <div class="checkbox-row"><input type="checkbox" id="show-grid" checked onchange="render()"><label for="show-grid">Show Grid</label></div>
+          <div class="checkbox-row" style="margin-top:4px"><input type="checkbox" id="show-sym" checked onchange="render()"><label for="show-sym">Show Symbols</label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Palette <span id="pal-count" style="float:right;color:var(--text);font-weight:500">0</span></div>
+      <div class="section-body">
+        <div class="palette-grid" id="palette-grid"></div>
+        <div style="margin-top:8px;display:flex;gap:4px">
+          <button class="btn sm" onclick="addCustomColor()">+ Add color</button>
+          <button class="btn sm danger" onclick="clearUnused()">Remove unused</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">DMC Thread List</div>
+      <div class="section-body">
+        <div id="dmc-list"><div style="color:var(--muted);font-size:11px">Convert an image to see DMC colors</div></div>
+        <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+          <button class="btn sm primary" onclick="exportFlossPNG()">Export Floss PNG</button>
+          <button class="btn sm" onclick="exportFlossCSV()">Export CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Product Description</div>
+      <div class="section-body">
+        <div id="desc-box" style="font-size:11px;color:var(--muted);line-height:1.6;white-space:pre-wrap;background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px;max-height:180px;overflow-y:auto;font-family:monospace">Generate to see description</div>
+        <div style="margin-top:6px;display:flex;gap:4px">
+          <button class="btn sm primary" onclick="generateDesc()" style="flex:1">Generate</button>
+          <button class="btn sm" onclick="copyDesc()" style="flex:1" id="copy-btn">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Actions</div>
+      <div class="section-body">
+        <div class="btn-row" style="margin-bottom:6px">
+          <button class="btn sm" onclick="undo()">Undo</button>
+          <button class="btn sm danger" onclick="clearCanvas()">Clear</button>
+        </div>
+        <button class="btn primary" style="width:100%;margin-bottom:4px" onclick="exportPNG()">Export PNG</button>
+        <button class="btn" style="width:100%" onclick="exportSymbol()">Export Chart</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Reference Image</div>
+      <div class="section-body">
+        <div id="drop-ref" onclick="document.getElementById('ref-file').click()">
+          <div style="font-size:20px">[img]</div>
+          <div>Drag &amp; drop or click to select</div>
+          <div style="font-size:10px;margin-top:2px">Auto-converts to pattern</div>
+        </div>
+        <img id="ref-preview">
+        <input type="file" id="ref-file" accept="image/*" style="display:none">
+        <div id="ref-btns" style="display:none;margin-top:6px">
+          <button class="btn sm primary" onclick="convertRef()" style="width:100%">Re-convert</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">History</div>
+      <div class="section-body">
+        <div id="history-list"><div>No history yet</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <button class="btn sm tool-btn active" id="t-move" onclick="setTool('move',this)">Move</button>
+    <button class="btn sm tool-btn" id="t-paint" onclick="setTool('paint',this)">Paint</button>
+    <button class="btn sm tool-btn" id="t-erase" onclick="setTool('erase',this)">Erase</button>
+    <button class="btn sm tool-btn" id="t-fill" onclick="setTool('fill',this)">Fill</button>
+    <button class="btn sm tool-btn" id="t-pick" onclick="setTool('pick',this)">Pick</button>
+    <button class="btn sm tool-btn" id="t-line" onclick="setTool('line',this)">Line</button>
+    <button class="btn sm tool-btn" id="t-select" onclick="setTool('select',this)">Select</button>
+    <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
+    <button class="btn sm" onclick="zoom(1.25)">+</button>
+    <div class="zoom-info" id="zoom-pct">100%</div>
+    <button class="btn sm" onclick="zoom(0.8)">-</button>
+    <button class="btn sm" onclick="resetZoom()">Reset</button>
+  </div>
+  <div id="canvas-area">
+    <div id="canvas-wrap">
+      <canvas id="gc"></canvas>
+      <canvas id="overlay" style="position:absolute;top:0;left:0;pointer-events:none"></canvas>
+    </div>
+  </div>
+  <div id="status-bar">
+    <div class="status-item">Tool: <b id="st-tool">Move</b></div>
+    <div class="status-item">Position: <b id="st-pos">--</b></div>
+    <div class="status-item">Size: <b id="st-size">-- x --</b></div>
+    <div class="status-item">Stitches: <b id="st-stitches">--</b></div>
+    <div class="status-item" style="margin-left:auto">Selected: <span id="st-color" style="display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;border:1px solid #ccc;background:#fff;margin-right:3px"></span><b id="st-color-hex">--</b></div>
+  </div>
+</div>
+</div>
+
+<div id="color-picker-wrap">
+  <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Pick color</div>
+  <input type="color" id="color-picker" oninput="onPickerChange()">
+  <input type="text" id="color-hex-input" placeholder="#ffffff" onchange="onHexInput()" maxlength="7">
+  <div style="display:flex;gap:4px;margin-top:8px">
+    <button class="btn sm primary" onclick="confirmColor()" style="flex:1">OK</button>
+    <button class="btn sm" onclick="closeColorPicker()" style="flex:1">Cancel</button>
+  </div>
+</div>
+
+<script>
+const SYMBOLS=["x","o","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","1","2","3"];
+
+// DMC color database (number, name, r, g, b)
+const DMC_COLORS = [
+  ["blanc","White",255,255,255],[310,"Black",0,0,0],[321,"Red",196,40,54],
+  [400,"Dark Mahogany",139,69,19],[402,"Light Mahogany",255,178,122],[413,"Dark Pewter",84,84,84],
+  [414,"Steel Gray",169,169,169],[415,"Pearl Gray",210,210,210],[420,"Hazel Nut Brown",170,128,80],
+  [422,"Light Hazel Nut",205,170,120],[433,"Medium Brown",138,90,50],[434,"Light Brown",165,115,70],
+  [435,"Very Light Brown",188,142,100],[436,"Tan",205,165,115],[437,"Light Tan",222,190,145],
+  [469,"Avocado Green",100,130,60],[470,"Light Avocado",130,165,80],[471,"Very Light Avocado",160,195,110],
+  [472,"Ultra Light Avocado",195,220,150],[500,"Very Dark Blue Green",30,80,60],
+  [501,"Dark Blue Green",50,110,85],[502,"Blue Green",80,140,110],[503,"Medium Blue Green",110,170,140],
+  [504,"Very Light Blue Green",175,210,190],[517,"Medium Wedgewood",65,130,170],
+  [518,"Light Wedgewood",90,160,200],[519,"Sky Blue",140,190,220],[520,"Dark Fern Green",80,100,60],
+  [522,"Fern Green",130,150,100],[523,"Light Fern Green",160,175,130],[524,"Very Light Fern",185,200,160],
+  [535,"Very Light Ash Gray",90,90,90],[543,"Ultra Very Light Beige Brown",225,210,190],
+  [550,"Very Dark Violet",90,30,100],[552,"Medium Violet",130,60,140],[553,"Violet",165,100,175],
+  [554,"Light Violet",210,165,215],[561,"Very Dark Jade",40,110,80],[562,"Medium Jade",70,150,110],
+  [563,"Light Jade",115,185,150],[564,"Very Light Jade",165,215,190],[580,"Dark Moss Green",90,110,40],
+  [581,"Moss Green",115,140,55],[597,"Turquoise",70,175,185],[598,"Light Turquoise",130,205,210],
+  [600,"Very Dark Cranberry",185,30,80],[601,"Dark Cranberry",205,50,100],[602,"Medium Cranberry",220,80,120],
+  [603,"Cranberry",235,120,155],[604,"Light Cranberry",245,170,190],[606,"Bright Orange Red",230,50,20],
+  [608,"Bright Orange",240,100,30],[610,"Dark Drab Brown",130,105,70],[611,"Drab Brown",155,130,90],
+  [612,"Light Drab Brown",185,165,130],[613,"Very Light Drab Brown",215,200,170],
+  [632,"Ultra Dark Desert Sand",140,85,55],[640,"Very Dark Beige Gray",130,120,100],
+  [642,"Dark Beige Gray",165,155,135],[644,"Medium Beige Gray",200,195,180],
+  [645,"Very Dark Beaver Gray",100,95,90],[646,"Dark Beaver Gray",130,125,120],
+  [647,"Medium Beaver Gray",165,160,155],[648,"Light Beaver Gray",200,195,190],
+  [666,"Bright Red",215,30,45],[676,"Light Old Gold",220,195,130],[677,"Very Light Old Gold",235,220,175],
+  [680,"Dark Old Gold",185,150,60],[699,"Green",20,120,40],[700,"Bright Green",30,140,50],
+  [701,"Light Green",60,165,75],[702,"Kelly Green",80,185,95],[703,"Chartreuse",110,200,110],
+  [704,"Bright Chartreuse",150,220,130],[712,"Cream",250,240,220],[718,"Plum",155,40,110],
+  [720,"Dark Orange Spice",210,95,30],[721,"Medium Orange Spice",225,125,55],
+  [722,"Light Orange Spice",240,165,100],[725,"Medium Light Topaz",250,200,60],
+  [726,"Light Topaz",250,215,100],[727,"Very Light Topaz",255,235,170],
+  [729,"Medium Old Gold",200,165,70],[730,"Very Dark Olive Green",110,105,30],
+  [731,"Dark Olive Green",135,130,45],[732,"Olive Green",155,150,55],[733,"Medium Olive Green",185,180,90],
+  [734,"Light Olive Green",210,205,140],[738,"Very Light Tan",230,200,155],[739,"Ultra Very Light Tan",245,225,195],
+  [740,"Tangerine",250,140,20],[741,"Medium Tangerine",250,165,50],[742,"Light Tangerine",250,195,95],
+  [743,"Medium Yellow",250,220,120],[744,"Pale Yellow",250,235,165],[745,"Light Pale Yellow",250,245,200],
+  [746,"Off White",255,250,230],[747,"Very Light Sky Blue",220,245,250],[754,"Light Peach",245,195,165],
+  [758,"Very Light Terra Cotta",235,175,150],[760,"Salmon",235,155,140],[761,"Light Salmon",245,185,175],
+  [762,"Very Light Pearl Gray",235,235,235],[772,"Very Light Yellow Green",215,230,190],
+  [775,"Very Light Baby Blue",210,235,245],[776,"Medium Pink",245,170,175],[777,"Very Dark Raspberry",145,40,70],
+  [778,"Very Light Antique Mauve",220,175,175],[779,"Dark Cocoa",100,70,60],
+  [780,"Ultra Very Dark Topaz",155,110,30],[781,"Very Dark Topaz",175,130,45],
+  [782,"Dark Topaz",195,150,55],[783,"Medium Topaz",215,175,80],[791,"Very Dark Cornflower Blue",65,75,135],
+  [792,"Dark Cornflower Blue",85,100,165],[793,"Medium Cornflower Blue",115,130,190],
+  [794,"Light Cornflower Blue",155,170,215],[796,"Dark Royal Blue",30,70,150],
+  [797,"Royal Blue",40,90,175],[798,"Dark Delft Blue",70,115,185],[799,"Medium Delft Blue",105,145,205],
+  [800,"Pale Delft Blue",175,200,225],[801,"Dark Coffee Brown",110,65,35],[806,"Dark Peacock Blue",45,150,175],
+  [807,"Peacock Blue",75,175,200],[809,"Delft Blue",130,165,205],[813,"Light Blue",155,190,220],
+  [814,"Dark Garnet",140,20,40],[815,"Medium Garnet",165,30,55],[816,"Garnet",185,40,65],
+  [817,"Very Dark Coral Red",195,50,50],[818,"Baby Pink",255,205,200],[819,"Light Baby Pink",255,225,220],
+  [820,"Very Dark Royal Blue",25,55,130],[822,"Light Beige Gray",220,215,195],
+  [823,"Dark Navy Blue",30,40,105],[824,"Very Dark Blue",45,95,150],[825,"Dark Blue",60,120,175],
+  [826,"Medium Blue",85,145,195],[827,"Very Light Blue",175,210,235],[828,"Ultra Very Light Blue",205,230,245],
+  [829,"Very Dark Golden Olive",130,105,45],[830,"Dark Golden Olive",155,125,55],
+  [831,"Medium Golden Olive",180,150,70],[832,"Golden Olive",200,170,80],[833,"Light Golden Olive",220,195,115],
+  [834,"Very Light Golden Olive",235,215,155],[838,"Very Dark Beige Brown",95,70,45],
+  [839,"Dark Beige Brown",120,90,60],[840,"Medium Beige Brown",150,115,80],
+  [841,"Light Beige Brown",185,155,120],[842,"Very Light Beige Brown",215,190,160],
+  [844,"Ultra Dark Beaver Gray",80,80,80],[869,"Very Dark Hazel Nut Brown",130,90,45],
+  [890,"Ultra Dark Pistachio Green",30,80,35],[891,"Dark Carnation",240,90,110],
+  [892,"Medium Carnation",245,120,135],[893,"Light Carnation",250,155,165],
+  [894,"Very Light Carnation",255,190,195],[895,"Very Dark Hunter Green",30,90,40],
+  [898,"Very Dark Coffee Brown",90,50,25],[899,"Medium Rose",240,130,145],
+  [900,"Dark Burnt Orange",200,70,20],[902,"Very Dark Garnet",120,25,45],
+  [904,"Very Dark Parrot Green",70,135,50],[905,"Dark Parrot Green",90,165,65],
+  [906,"Medium Parrot Green",120,195,90],[907,"Light Parrot Green",160,220,120],
+  [909,"Very Dark Emerald Green",25,130,60],[910,"Dark Emerald Green",35,155,75],
+  [911,"Medium Emerald Green",50,175,90],[912,"Light Emerald Green",70,200,110],
+  [913,"Medium Nile Green",120,200,150],[915,"Dark Plum",140,20,80],
+  [917,"Medium Plum",175,35,105],[918,"Dark Red Copper",155,65,35],
+  [919,"Red Copper",185,85,45],[920,"Medium Copper",200,105,60],
+  [921,"Copper",215,125,75],[922,"Light Copper",230,150,100],
+  [924,"Very Dark Gray Green",75,105,95],[926,"Medium Gray Green",130,160,150],
+  [927,"Light Gray Green",170,195,185],[928,"Very Light Gray Green",205,220,215],
+  [930,"Dark Antique Blue",80,105,130],[931,"Medium Antique Blue",110,140,165],
+  [932,"Light Antique Blue",155,180,200],[934,"Black Avocado Green",50,65,30],
+  [935,"Dark Avocado Green",65,90,40],[936,"Very Dark Avocado Green",80,105,50],
+  [937,"Medium Avocado Green",95,125,60],[938,"Ultra Dark Coffee Brown",70,40,20],
+  [939,"Very Dark Navy Blue",20,30,90],[943,"Medium Aquamarine",50,185,160],
+  [945,"Tawny",245,190,155],[946,"Medium Burnt Orange",220,95,25],
+  [947,"Burnt Orange",235,120,40],[948,"Very Light Peach",255,225,210],
+  [950,"Light Desert Sand",225,185,155],[951,"Light Tawny",250,215,185],
+  [954,"Nile Green",110,195,140],[955,"Light Nile Green",155,220,175],
+  [956,"Geranium",245,120,115],[957,"Pale Geranium",250,175,170],
+  [958,"Dark Sea Green",50,185,165],[959,"Medium Sea Green",80,200,185],
+  [961,"Dark Dusty Rose",210,110,120],[962,"Medium Dusty Rose",230,145,150],
+  [963,"Ultra Very Light Dusty Rose",255,210,210],[964,"Light Sea Green",155,220,210],
+  [966,"Medium Baby Green",170,215,175],[967,"Very Light Apricot",255,210,185],
+  [970,"Light Pumpkin",240,135,45],[971,"Pumpkin",240,120,20],
+  [972,"Deep Canary",250,175,20],[973,"Bright Canary",250,215,30],
+  [975,"Dark Golden Brown",150,95,30],[976,"Medium Golden Brown",200,145,70],
+  [977,"Light Golden Brown",225,175,105],[986,"Very Dark Forest Green",50,90,40],
+  [987,"Dark Forest Green",70,120,55],[988,"Medium Forest Green",95,150,75],
+  [989,"Forest Green",120,175,100],[991,"Dark Aquamarine",50,135,115],
+  [992,"Medium Aquamarine",75,170,150],[993,"Light Aquamarine",115,195,175],
+  [995,"Dark Electric Blue",30,145,210],[996,"Medium Electric Blue",60,185,240],
+  [3011,"Dark Khaki Green",130,140,80],[3012,"Medium Khaki Green",155,165,100],
+  [3013,"Light Khaki Green",185,195,140],[3021,"Very Dark Brown Gray",75,70,55],
+  [3022,"Medium Brown Gray",140,140,115],[3023,"Light Brown Gray",175,175,155],
+  [3024,"Very Light Brown Gray",215,215,200],[3031,"Very Dark Mocha Brown",80,60,40],
+  [3032,"Medium Mocha Brown",175,155,130],[3033,"Very Light Mocha Brown",215,200,180],
+  [3041,"Medium Antique Violet",160,130,155],[3042,"Light Antique Violet",195,170,190],
+  [3045,"Dark Yellow Beige",195,165,105],[3046,"Medium Yellow Beige",215,190,140],
+  [3047,"Light Yellow Beige",235,220,185],[3051,"Dark Green Gray",90,105,70],
+  [3052,"Medium Green Gray",130,150,105],[3053,"Green Gray",160,175,135],
+  [3064,"Very Light Desert Sand",225,185,160],[3072,"Very Light Beaver Gray",220,220,215],
+  [3078,"Very Light Golden Yellow",255,250,200],[3325,"Light Baby Blue",175,205,230],
+  [3326,"Light Rose",250,175,185],[3328,"Dark Salmon",220,120,110],
+  [3340,"Medium Apricot",250,150,100],[3341,"Apricot",250,180,140],
+  [3345,"Dark Hunter Green",40,105,45],[3346,"Hunter Green",60,130,60],
+  [3347,"Medium Yellow Green",95,160,90],[3348,"Light Yellow Green",175,210,155],
+  [3350,"Ultra Dark Dusty Rose",190,75,100],[3354,"Light Dusty Rose",235,175,180],
+  [3362,"Dark Pine Green",80,110,65],[3363,"Medium Pine Green",105,140,85],
+  [3364,"Pine Green",140,170,115],[3371,"Black Brown",35,20,10],
+  [3607,"Light Plum",210,80,150],[3608,"Very Light Plum",235,145,190],
+  [3609,"Ultra Light Plum",245,185,215],[3685,"Very Dark Mauve",145,40,70],
+  [3687,"Mauve",200,115,130],[3688,"Medium Mauve",225,165,175],
+  [3689,"Light Mauve",245,195,200],[3705,"Dark Melon",250,120,110],
+  [3706,"Medium Melon",250,155,145],[3708,"Light Melon",255,195,190],
+  [3712,"Medium Salmon",235,140,125],[3713,"Very Light Salmon",255,210,205],
+  [3716,"Very Light Dusty Rose",255,185,190],[3721,"Dark Shell Pink",185,95,95],
+  [3722,"Medium Shell Pink",200,120,115],[3726,"Dark Antique Mauve",165,110,120],
+  [3727,"Light Antique Mauve",225,185,190],[3731,"Very Dark Dusty Rose",210,100,115],
+  [3733,"Dusty Rose",235,145,155],[3740,"Dark Antique Violet",120,95,115],
+  [3743,"Very Light Antique Violet",210,200,215],[3746,"Dark Blue Violet",110,100,175],
+  [3747,"Very Light Blue Violet",200,205,235],[3750,"Very Dark Antique Blue",50,75,105],
+  [3752,"Very Light Antique Blue",185,200,220],[3753,"Ultra Very Light Antique Blue",215,225,235],
+  [3755,"Baby Blue",120,165,205],[3756,"Ultra Very Light Baby Blue",230,245,255],
+  [3760,"Medium Wedgewood",60,125,170],[3761,"Light Sky Blue",145,195,225],
+  [3765,"Very Dark Peacock Blue",35,130,155],[3766,"Light Peacock Blue",100,185,210],
+  [3768,"Dark Gray Green",95,125,120],[3770,"Very Light Tawny",255,230,210],
+  [3771,"Ultra Very Light Terra Cotta",245,200,180],[3772,"Very Dark Desert Sand",165,115,85],
+  [3773,"Medium Desert Sand",195,145,110],[3774,"Very Light Desert Sand",240,215,195],
+  [3776,"Light Mahogany",200,130,75],[3777,"Very Dark Terra Cotta",165,70,55],
+  [3778,"Light Terra Cotta",210,145,125],[3779,"Ultra Very Light Terra Cotta",250,205,195],
+  [3781,"Dark Mocha Brown",120,95,70],[3782,"Light Mocha Brown",200,180,155],
+  [3787,"Dark Brown Gray",100,95,80],[3790,"Ultra Dark Beige Gray",120,105,85],
+  [3799,"Very Dark Pewter Gray",65,65,65],[3801,"Very Dark Melon",220,70,75],
+  [3802,"Very Dark Antique Mauve",130,75,85],[3803,"Dark Mauve",175,60,95],
+  [3804,"Dark Cyclamen Pink",220,50,115],[3805,"Cyclamen Pink",235,85,145],
+  [3806,"Light Cyclamen Pink",245,140,180],[3807,"Cornflower Blue",90,110,170],
+  [3808,"Ultra Very Dark Turquoise",40,120,130],[3809,"Very Dark Turquoise",55,150,165],
+  [3810,"Dark Turquoise",70,175,190],[3811,"Very Light Turquoise",175,225,235],
+  [3812,"Very Dark Sea Green",40,160,145],[3813,"Light Blue Green",155,205,185],
+  [3814,"Aquamarine",55,150,130],[3815,"Dark Celadon Green",70,130,100],
+  [3816,"Celadon Green",95,160,125],[3817,"Light Celadon Green",140,190,165],
+  [3818,"Ultra Very Dark Emerald Green",15,100,50],[3819,"Light Moss Green",195,210,105],
+  [3820,"Dark Straw",220,185,90],[3821,"Straw",235,205,120],[3822,"Light Straw",245,225,165],
+  [3823,"Ultra Pale Yellow",255,250,215],[3824,"Light Apricot",250,195,170],
+  [3825,"Pale Pumpkin",250,175,110],[3826,"Golden Brown",185,130,60],
+  [3827,"Pale Golden Brown",240,190,120],[3828,"Hazel Nut Brown",175,140,90],
+  [3829,"Very Dark Old Gold",160,125,35],[3830,"Terra Cotta",185,90,70],
+  [3831,"Dark Raspberry",175,40,70],[3832,"Medium Raspberry",205,75,100],
+  [3833,"Light Raspberry",225,120,140],[3834,"Dark Grape",100,55,100],
+  [3835,"Medium Grape",140,90,140],[3836,"Light Grape",180,140,185],
+  [3837,"Ultra Dark Lavender",110,65,140],[3838,"Dark Lavender",100,100,175],
+  [3839,"Medium Lavender",130,130,200],[3840,"Light Lavender",175,175,220],
+  [3841,"Pale Baby Blue",195,215,235],[3842,"Dark Wedgewood",50,105,150],
+  [3843,"Electric Blue",25,170,225],[3844,"Dark Bright Turquoise",20,185,200],
+  [3845,"Medium Bright Turquoise",25,205,215],[3846,"Light Bright Turquoise",45,225,230],
+  [3847,"Dark Teal Green",45,135,120],[3848,"Medium Teal Green",65,160,145],
+  [3849,"Light Teal Green",90,185,170],[3850,"Dark Bright Green",30,150,110],
+  [3851,"Light Bright Green",55,190,145],[3852,"Very Dark Straw",195,155,55],
+  [3853,"Dark Autumn Gold",225,140,45],[3854,"Medium Autumn Gold",235,165,80],
+  [3855,"Light Autumn Gold",245,200,130],[3856,"Ultra Very Light Mahogany",255,215,185],
+  [3857,"Dark Rosewood",110,40,30],[3858,"Medium Rosewood",155,75,60],
+  [3859,"Light Rosewood",195,140,120],[3860,"Cocoa",120,90,80],
+  [3861,"Light Cocoa",170,140,130],[3862,"Dark Mocha Beige",145,115,80],
+  [3863,"Medium Mocha Beige",175,145,105],[3864,"Light Mocha Beige",210,185,155],
+  [3865,"Winter White",250,248,240],[3866,"Ultra Very Light Mocha Brown",245,240,230],
+];
+// Fix blanc entry
+DMC_COLORS[0][0] = "blanc";
+
+function nearestDMC(hex){
+  const rgb = hexToRgb(hex);
+  if(!rgb) return {num:"--",name:"Unknown",hex:hex};
+  let best=null, bestD=Infinity;
+  for(const [num,name,r,g,b] of DMC_COLORS){
+    const d=(rgb[0]-r)**2+(rgb[1]-g)**2+(rgb[2]-b)**2;
+    if(d<bestD){bestD=d;best={num,name,hex:rgbToHex(r,g,b)};}
+  }
+  return best||{num:"--",name:"Unknown",hex:hex};
+}
+
+function updateDMCList(){
+  const counts=new Array(palette.length).fill(0);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(grid[r][c]>=0)counts[grid[r][c]]++;
+  const sorted=palette.map((hex,i)=>({hex,i,n:counts[i]})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const el=document.getElementById("dmc-list");
+  if(!sorted.length){el.innerHTML="<div style=\"color:var(--muted);font-size:11px\">Convert an image to see DMC colors</div>";return;}
+  el.innerHTML=sorted.map(({hex,i,n})=>{
+    const dmc=nearestDMC(hex);
+    return \`<div class="dmc-item">
+      <div class="dmc-dot" style="background:\${hex}"></div>
+      <div class="dmc-info">
+        <div class="dmc-num">DMC \${dmc.num}</div>
+        <div class="dmc-name">\${dmc.name}</div>
+      </div>
+      <div class="dmc-count">\${n}</div>
+    </div>\`;
+  }).join("");
+}
+
+function exportFlossCSV(){
+  if(!palette.length)return alert("No colors yet");
+  const counts=new Array(palette.length).fill(0);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(grid[r][c]>=0)counts[grid[r][c]]++;
+  const sorted=palette.map((hex,i)=>({hex,i,n:counts[i]})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  let csv="N,Symbol,DMC Number,Name,Stitches,Hex\n";
+  sorted.forEach(({hex,i,n},idx)=>{
+    const dmc=nearestDMC(hex);
+    csv+=\`\${idx+1},\${SYMBOLS[i%SYMBOLS.length]},DMC \${dmc.num},\${dmc.name},\${n},\${hex}\n\`;
+  });
+  const a=document.createElement("a");
+  a.download="floss-list.csv";
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.click();
+}
+
+function exportFlossPNG(){
+  if(!palette.length)return alert("No colors yet");
+  const counts=new Array(palette.length).fill(0);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(grid[r][c]>=0)counts[grid[r][c]]++;
+  const sorted=palette.map((hex,i)=>({hex,i,n:counts[i]})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const rowH=32, headerH=80, footerH=20;
+  const W=620, H=headerH+sorted.length*rowH+footerH;
+  const ec=document.createElement("canvas");
+  ec.width=W;ec.height=H;
+  const ex=ec.getContext("2d");
+  ex.fillStyle="#fff";ex.fillRect(0,0,W,H);
+  // Header
+  ex.fillStyle="#2d6a4f";ex.fillRect(0,0,W,headerH);
+  ex.fillStyle="#fff";ex.font="bold 22px serif";ex.textAlign="left";
+  ex.fillText("Floss List for Crosses",20,38);
+  ex.font="14px sans-serif";ex.fillStyle="#a8d5bf";
+  ex.fillText("Use 2 strands of thread for cross stitch",20,62);
+  // Column headers
+  const cols2=["N","Symbol","Number","Name","Stitches"];
+  const xs=[20,65,110,230,490];
+  ex.fillStyle="#f0f0f0";ex.fillRect(0,headerH,W,rowH);
+  ex.font="bold 12px sans-serif";ex.fillStyle="#666";ex.textAlign="left";
+  cols2.forEach((c,i)=>ex.fillText(c,xs[i],headerH+20));
+  ex.strokeStyle="#e0e0e0";ex.lineWidth=1;
+  ex.beginPath();ex.moveTo(0,headerH+rowH);ex.lineTo(W,headerH+rowH);ex.stroke();
+  // Rows
+  sorted.forEach(({hex,i,n},idx)=>{
+    const y=headerH+rowH*(idx+1);
+    const dmc=nearestDMC(hex);
+    if(idx%2===0){ex.fillStyle="#f9f9f9";ex.fillRect(0,y,W,rowH);}
+    // color dot
+    ex.fillStyle=hex;ex.fillRect(xs[1]-4,y+8,16,16);
+    ex.strokeStyle="#ccc";ex.lineWidth=0.5;ex.strokeRect(xs[1]-4,y+8,16,16);
+    // symbol
+    ex.fillStyle="#333";ex.font="bold 13px monospace";ex.textAlign="center";
+    ex.fillText(SYMBOLS[i%SYMBOLS.length],xs[1]+4,y+21);
+    // text
+    ex.font="12px sans-serif";ex.textAlign="left";ex.fillStyle="#333";
+    ex.fillText(idx+1,xs[0],y+21);
+    ex.fillText("DMC "+dmc.num,xs[2],y+21);
+    ex.font="12px sans-serif";ex.fillStyle="#555";
+    const name=dmc.name.length>22?dmc.name.substring(0,22)+"...":dmc.name;
+    ex.fillText(name,xs[3],y+21);
+    ex.textAlign="right";ex.fillStyle="#888";
+    ex.fillText(n.toLocaleString(),xs[4]+80,y+21);
+    ex.textAlign="left";
+    ex.strokeStyle="#eee";ex.lineWidth=0.5;
+    ex.beginPath();ex.moveTo(0,y+rowH);ex.lineTo(W,y+rowH);ex.stroke();
+  });
+  const a=document.createElement("a");
+  a.download="floss-list.png";
+  a.href=ec.toDataURL();a.click();
+}
+</script>
+
+<script>
+// State
+let cols=40,rows=40,cellSz=8,zoomLevel=1;
+let grid=[],palette=[],selColor=0,tool="move";
+let history=[],historyLabels=[];
+let isPainting=false,panStart=null,panOffset={x:0,y:0},viewX=0,viewY=0;
+let lineStart=null,selectRect=null,selectDrag=false;
+let pickerTarget=-1,refImgSource=null;
+
+const gc=document.getElementById("gc");
+const ctx=gc.getContext("2d");
+const ov=document.getElementById("overlay");
+const octx=ov.getContext("2d");
+const wrap=document.getElementById("canvas-wrap");
+const area=document.getElementById("canvas-area");
+
+function initGrid(){
+  grid=Array.from({length:rows},()=>new Array(cols).fill(-1));
+  resizeCanvasToArea();
+  updateStatus();render();
+}
+
+function resizeCanvasToArea(){
+  const area=document.getElementById("canvas-area");
+  gc.width=area.clientWidth||800;
+  gc.height=area.clientHeight||600;
+  ov.width=gc.width; ov.height=gc.height;
+}
+
+function onSzChange(){
+  const v=parseInt(document.getElementById("sz").value);
+  cols=v;rows=v;
+  document.getElementById("sz-v").textContent=v+" x "+v;
+  grid=Array.from({length:rows},()=>new Array(cols).fill(-1));
+  viewX=0;viewY=0;
+  resizeCanvasToArea();
+  updateStatus();resetZoom();
+}
+
+function render(){
+  const showGrid=document.getElementById("show-grid").checked;
+  const showSym=document.getElementById("show-sym").checked;
+  const W=gc.width, H=gc.height;
+  const ds=Math.max(1, cellSz*zoomLevel); // display size per stitch
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle="#f0ece3"; ctx.fillRect(0,0,W,H);
+
+  // Draw stitches
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const px=Math.round((c-viewX)*ds);
+      const py=Math.round((r-viewY)*ds);
+      if(px+ds<0||py+ds<0||px>W||py>H) continue; // skip offscreen
+
+      const ci=grid[r][c];
+      if(ci>=0&&ci<palette.length){
+        ctx.fillStyle=palette[ci];
+        ctx.fillRect(px,py,ds,ds);
+        if(showSym&&ds>=8){
+          const rgb=hexToRgb(palette[ci]);
+          const lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
+          ctx.fillStyle=lum>140?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.8)";
+          ctx.font=Math.max(6,ds-3)+"px monospace";
+          ctx.textAlign="center"; ctx.textBaseline="middle";
+          ctx.fillText(SYMBOLS[ci%SYMBOLS.length],px+ds/2,py+ds/2);
+        }
+      }
+      if(showGrid&&ds>=3){
+        ctx.strokeStyle="rgba(100,100,100,0.2)";
+        ctx.lineWidth=0.5;
+        ctx.strokeRect(px,py,ds,ds);
+      }
+    }
+  }
+
+  // Bold every-10 grid lines
+  if(showGrid&&ds>=3){
+    ctx.strokeStyle="rgba(50,50,50,0.35)"; ctx.lineWidth=1;
+    for(let r=0;r<=rows;r+=10){
+      const py=Math.round((r-viewY)*ds);
+      if(py<0||py>H) continue;
+      ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(W,py);ctx.stroke();
+    }
+    for(let c=0;c<=cols;c+=10){
+      const px=Math.round((c-viewX)*ds);
+      if(px<0||px>W) continue;
+      ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,H);ctx.stroke();
+    }
+  }
+
+  // Selection overlay
+  octx.clearRect(0,0,ov.width,ov.height);
+  if(selectRect){
+    const {x,y,w,h}=selectRect;
+    const px=Math.round((x-viewX)*ds), py=Math.round((y-viewY)*ds);
+    octx.strokeStyle="rgba(45,106,79,0.9)"; octx.lineWidth=1.5; octx.setLineDash([4,3]);
+    octx.strokeRect(px,py,w*ds,h*ds);
+    octx.setLineDash([]);
+    octx.fillStyle="rgba(45,106,79,0.08)"; octx.fillRect(px,py,w*ds,h*ds);
+  }
+}
+
+
+function setTool(t,btn){
+  tool=t;
+  document.querySelectorAll(".tool-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  const cursors={move:"grab",paint:"crosshair",erase:"cell",fill:"crosshair",pick:"crosshair",line:"crosshair",select:"default"};
+  area.style.cursor=cursors[t]||"crosshair";
+  document.getElementById("st-tool").textContent=btn.textContent.trim();
+}
+
+function zoom(f){
+  zoomLevel=Math.min(16,Math.max(0.1,zoomLevel*f));
+  document.getElementById("zoom-pct").textContent=Math.round(zoomLevel*100)+"%";
+  render();
+}
+function resetZoom(){
+  // Fit entire pattern in view
+  const ds_x=gc.width/cols, ds_y=gc.height/rows;
+  const fitDs=Math.min(ds_x,ds_y);
+  zoomLevel=fitDs/cellSz;
+  viewX=0; viewY=0;
+  document.getElementById("zoom-pct").textContent=Math.round(zoomLevel*100)+"%";
+  render();
+}
+
+function getCell(e){
+  const wr=gc.getBoundingClientRect();
+  const ds=Math.max(1,cellSz*zoomLevel);
+  const c=Math.floor((e.clientX-wr.left)/ds+viewX);
+  const r=Math.floor((e.clientY-wr.top)/ds+viewY);
+  return[c,r];
+}
+function inBounds(c,r){return c>=0&&c<cols&&r>=0&&r<rows;}
+
+function paintCell(c,r){
+  if(!inBounds(c,r))return false;
+  if(tool==="erase"){if(grid[r][c]===-1)return false;grid[r][c]=-1;return true;}
+  if(tool==="paint"){if(selColor<0||selColor>=palette.length)return false;if(grid[r][c]===selColor)return false;grid[r][c]=selColor;return true;}
+  return false;
+}
+
+function floodFill(sc,sr,oldIdx,newIdx){
+  if(oldIdx===newIdx)return;
+  const stack=[[sc,sr]];
+  while(stack.length){const[c,r]=stack.pop();if(!inBounds(c,r)||grid[r][c]!==oldIdx)continue;grid[r][c]=newIdx;stack.push([c+1,r],[c-1,r],[c,r+1],[c,r-1]);}
+}
+
+function drawLine(x0,y0,x1,y1){
+  const dx=Math.abs(x1-x0),dy=Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1;
+  let err=dx-dy;
+  while(true){if(inBounds(x0,y0)&&selColor>=0&&selColor<palette.length)grid[y0][x0]=selColor;if(x0===x1&&y0===y1)break;const e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}}
+}
+
+area.addEventListener("mousedown",e=>{
+  const[c,r]=getCell(e);
+  if(tool==="move"){isPainting=true;area.style.cursor="grabbing";panStart={x:e.clientX,y:e.clientY,vx:viewX,vy:viewY};return;}
+  if(tool==="pick"){if(inBounds(c,r)&&grid[r][c]>=0){selColor=grid[r][c];updatePaletteUI();updateSelColorStatus();}return;}
+  if(tool==="fill"){if(!inBounds(c,r))return;pushHistory("Fill");floodFill(c,r,grid[r][c],selColor);render();return;}
+  if(tool==="line"){lineStart=[c,r];return;}
+  if(tool==="select"){selectRect={x:c,y:r,w:0,h:0};selectDrag=true;return;}
+  pushHistory(tool==="erase"?"Erase":"Paint");isPainting=true;paintCell(c,r);render();
+});
+
+area.addEventListener("mousemove",e=>{
+  const[c,r]=getCell(e);
+  document.getElementById("st-pos").textContent=inBounds(c,r)?(c+1)+", "+(r+1):"--";
+  if(tool==="move"&&isPainting&&panStart){
+    const ds=Math.max(1,cellSz*zoomLevel);
+    const dx=(e.clientX-panStart.x)/ds;
+    const dy=(e.clientY-panStart.y)/ds;
+    viewX=Math.max(0,Math.min(cols-1,panStart.vx-dx));
+    viewY=Math.max(0,Math.min(rows-1,panStart.vy-dy));
+    render();return;
+  }
+  if(tool==="select"&&selectDrag&&selectRect){selectRect.w=c-selectRect.x+1;selectRect.h=r-selectRect.y+1;render();return;}
+  if(isPainting&&(tool==="paint"||tool==="erase")){paintCell(c,r);render();}
+});
+
+area.addEventListener("mouseup",e=>{
+  const[c,r]=getCell(e);
+  if(tool==="line"&&lineStart){pushHistory("Line");drawLine(lineStart[0],lineStart[1],c,r);lineStart=null;render();}
+  if(tool==="move")area.style.cursor="grab";
+  if(tool==="select")selectDrag=false;
+  isPainting=false;
+});
+area.addEventListener("mouseleave",()=>{isPainting=false;document.getElementById("st-pos").textContent="--";});
+area.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const wr=gc.getBoundingClientRect();
+  const mx=e.clientX-wr.left, my=e.clientY-wr.top;
+  const ds=Math.max(1,cellSz*zoomLevel);
+  const cx=mx/ds+viewX, cy=my/ds+viewY; // stitch under mouse
+  zoom(e.deltaY<0?1.15:0.87);
+  // Keep stitch under mouse in same position
+  const newDs=Math.max(1,cellSz*zoomLevel);
+  viewX=cx-mx/newDs;
+  viewY=cy-my/newDs;
+  viewX=Math.max(0,viewX); viewY=Math.max(0,viewY);
+  render();
+},{passive:false});
+
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+  const map={m:"move",p:"paint",e:"erase",f:"fill",k:"pick",l:"line",s:"select"};
+  if(map[e.key.toLowerCase()]){const id="t-"+map[e.key.toLowerCase()];const btn=document.getElementById(id);if(btn)setTool(map[e.key.toLowerCase()],btn);}
+  if((e.ctrlKey||e.metaKey)&&e.key==="z"){e.preventDefault();undo();}
+  if(e.key==="Escape"){selectRect=null;render();}
+});
+
+function pushHistory(label="Edit"){history.push(grid.map(r=>[...r]));historyLabels.push(label);if(history.length>40){history.shift();historyLabels.shift();}updateHistoryUI();}
+function undo(){if(!history.length)return;grid=history.pop();historyLabels.pop();updateHistoryUI();render();}
+function updateHistoryUI(){const el=document.getElementById("history-list");if(!history.length){el.innerHTML="<div>No history yet</div>";return;}el.innerHTML=[...historyLabels].reverse().slice(0,6).map((l,i)=>"<div>#"+(historyLabels.length-i)+": "+l+"</div>").join("");}
+function clearCanvas(){pushHistory("Clear");grid=Array.from({length:rows},()=>new Array(cols).fill(-1));selectRect=null;render();}
+
+function updatePaletteUI(){
+  const el=document.getElementById("palette-grid");
+  el.innerHTML=palette.map((hex,i)=>"<div class=\"swatch"+(i===selColor?" selected":"")+"\" style=\"background:"+hex+"\" title=\""+hex+"\" onclick=\"selColor="+i+";updatePaletteUI();updateSelColorStatus()\" ondblclick=\"editColor("+i+")\" ></div>").join("")+"<div class=\"swatch-add\" onclick=\"addCustomColor()\" title=\"Add color\" style=\"width:24px;height:24px;border-radius:4px;cursor:pointer;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px\">+</div>";
+  document.getElementById("pal-count").textContent=palette.length+" colors";
+  updateSelColorStatus();
+  updateDMCList();
+}
+
+function updateSelColorStatus(){
+  const hex=palette[selColor]||"#fff";
+  document.getElementById("st-color").style.background=hex;
+  document.getElementById("st-color-hex").textContent=hex;
+}
+
+function clearUnused(){
+  const used=new Set();
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(grid[r][c]>=0)used.add(grid[r][c]);
+  const newPal=palette.filter((_,i)=>used.has(i));
+  const remap=new Array(palette.length).fill(-1);
+  let ni=0;for(let i=0;i<palette.length;i++)if(used.has(i))remap[i]=ni++;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(grid[r][c]>=0)grid[r][c]=remap[grid[r][c]];
+  palette=newPal;selColor=Math.min(selColor,palette.length-1);
+  updatePaletteUI();render();
+}
+
+function addCustomColor(){pickerTarget=-1;openColorPicker("#ffffff");}
+function editColor(i){pickerTarget=i;openColorPicker(palette[i]);}
+function openColorPicker(hex){const el=document.getElementById("color-picker-wrap");document.getElementById("color-picker").value=hex;document.getElementById("color-hex-input").value=hex;el.style.display="block";el.style.top="80px";el.style.right="12px";}
+function closeColorPicker(){document.getElementById("color-picker-wrap").style.display="none";}
+function onPickerChange(){document.getElementById("color-hex-input").value=document.getElementById("color-picker").value;}
+function onHexInput(){let v=document.getElementById("color-hex-input").value.trim();if(!v.startsWith("#"))v="#"+v;if(/^#[0-9a-fA-F]{6}$/.test(v))document.getElementById("color-picker").value=v;}
+function confirmColor(){const hex=document.getElementById("color-picker").value;if(pickerTarget===-1){palette.push(hex);selColor=palette.length-1;}else{palette[pickerTarget]=hex;}updatePaletteUI();render();closeColorPicker();}
+document.addEventListener("click",e=>{const el=document.getElementById("color-picker-wrap");if(el.style.display==="block"&&!el.contains(e.target)&&!e.target.classList.contains("swatch"))closeColorPicker();});
+
+// Reference image
+const dropRef=document.getElementById("drop-ref");
+document.getElementById("ref-file").onchange=e=>loadRef(e.target.files[0]);
+dropRef.addEventListener("dragover",e=>{e.preventDefault();dropRef.style.borderColor="var(--accent)"});
+dropRef.addEventListener("dragleave",()=>dropRef.style.borderColor="");
+dropRef.addEventListener("drop",e=>{e.preventDefault();dropRef.style.borderColor="";loadRef(e.dataTransfer.files[0])});
+
+function loadRef(f){
+  if(!f||!f.type.startsWith("image/"))return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    refImgSource=new Image();
+    refImgSource.onload=()=>{
+      document.getElementById("ref-preview").src=ev.target.result;
+      document.getElementById("ref-preview").style.display="block";
+      document.getElementById("ref-btns").style.display="block";
+      convertRef();
+    };
+    refImgSource.src=ev.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function convertRef(){
+  if(!refImgSource){alert("No image loaded");return;}
+  const nc=Math.max(2,parseInt(document.getElementById("nc").value));
+  const bgThresh=parseInt(document.getElementById("bg-thresh").value);
+
+  // Ensure canvas is sized correctly
+  gc.width=cols*cellSz; gc.height=rows*cellSz;
+  ov.width=gc.width; ov.height=gc.height;
+
+  const tmp=document.createElement("canvas");
+  tmp.width=cols; tmp.height=rows;
+  const tx=tmp.getContext("2d");
+  tx.drawImage(refImgSource,0,0,cols,rows);
+  const pix=tx.getImageData(0,0,cols,rows).data;
+
+  // Build pixel grid
+  const pixGrid=[];
+  const nonBgPixels=[];
+  for(let i=0;i<rows;i++){
+    pixGrid.push([]);
+    for(let j=0;j<cols;j++){
+      const idx=(i*cols+j)*4;
+      const rgb=[pix[idx],pix[idx+1],pix[idx+2]];
+      pixGrid[i].push(rgb);
+      const isBg=bgThresh>0&&rgb[0]>=bgThresh&&rgb[1]>=bgThresh&&rgb[2]>=bgThresh;
+      if(!isBg) nonBgPixels.push(rgb);
+    }
+  }
+
+  // Use nonBg pixels for palette; fall back to all pixels if too few
+  const srcPixels = nonBgPixels.length >= nc*5 ? nonBgPixels : pixGrid.flat();
+  const useThresh = nonBgPixels.length >= nc*5 ? bgThresh : 0;
+
+  // Build palette
+  const centers=medianCut(srcPixels, nc);
+  palette=centers.map(([r,g,b])=>rgbToHex(Math.round(r),Math.round(g),Math.round(b)));
+
+  // Assign each pixel to nearest palette color
+  pushHistory("Convert Image");
+  grid=pixGrid.map(row=>row.map(px=>{
+    const isBg=useThresh>0&&px[0]>=useThresh&&px[1]>=useThresh&&px[2]>=useThresh;
+    if(isBg) return -1;
+    return nearestColorHex(px,palette);
+  }));
+
+  selColor=0;
+
+  updatePaletteUI(); updateStatus();
+  setTimeout(()=>{ resizeCanvasToArea(); viewX=0; viewY=0; resetZoom(); }, 50);
+}
+
+function medianCut(pixels,k){
+  function avg(pts){
+    if(!pts.length)return[128,128,128];
+    const s=[0,0,0];
+    for(const p of pts){s[0]+=p[0];s[1]+=p[1];s[2]+=p[2];}
+    return[s[0]/pts.length,s[1]/pts.length,s[2]/pts.length];
+  }
+  function cut(pts,depth){
+    if(depth===0||pts.length===0)return[avg(pts)];
+    if(pts.length===1)return[pts[0].slice()];
+    let minR=255,maxR=0,minG=255,maxG=0,minB=255,maxB=0;
+    for(const p of pts){
+      if(p[0]<minR)minR=p[0];if(p[0]>maxR)maxR=p[0];
+      if(p[1]<minG)minG=p[1];if(p[1]>maxG)maxG=p[1];
+      if(p[2]<minB)minB=p[2];if(p[2]>maxB)maxB=p[2];
+    }
+    const rR=maxR-minR,rG=maxG-minG,rB=maxB-minB;
+    const ch=rR>=rG&&rR>=rB?0:rG>=rB?1:2;
+    const sorted=[...pts].sort((a,b)=>a[ch]-b[ch]); // copy before sort
+    const mid=Math.floor(sorted.length/2);
+    return[...cut(sorted.slice(0,mid),depth-1),...cut(sorted.slice(mid),depth-1)];
+  }
+  // Sample evenly
+  const maxSample=4000;
+  const sample=pixels.length>maxSample
+    ?pixels.filter((_,i)=>i%Math.floor(pixels.length/maxSample)===0)
+    :pixels;
+  const depth=Math.ceil(Math.log2(Math.max(k,2)));
+  let centers=cut([...sample],depth);
+  // Trim to k
+  while(centers.length>k){
+    let minD=Infinity,mi=0,mj=1;
+    for(let i=0;i<centers.length;i++)
+      for(let j=i+1;j<centers.length;j++){
+        const d=(centers[i][0]-centers[j][0])**2+(centers[i][1]-centers[j][1])**2+(centers[i][2]-centers[j][2])**2;
+        if(d<minD){minD=d;mi=i;mj=j;}
+      }
+    const mg=[(centers[mi][0]+centers[mj][0])/2,(centers[mi][1]+centers[mj][1])/2,(centers[mi][2]+centers[mj][2])/2];
+    centers.splice(mj,1);centers.splice(mi,1,mg);
+  }
+  // Refine with k-means iterations
+  for(let iter=0;iter<15;iter++){
+    const sums=Array.from({length:centers.length},()=>[0,0,0,0]);
+    for(const p of sample){
+      const c=nearestRgb(p,centers);
+      sums[c][0]+=p[0];sums[c][1]+=p[1];sums[c][2]+=p[2];sums[c][3]++;
+    }
+    centers=sums.map((s,i)=>s[3]?[s[0]/s[3],s[1]/s[3],s[2]/s[3]]:centers[i]);
+  }
+  return centers;
+}
+
+function nearestRgb(px,pal){let best=0,bd=Infinity;for(let i=0;i<pal.length;i++){const d=(px[0]-pal[i][0])**2+(px[1]-pal[i][1])**2+(px[2]-pal[i][2])**2;if(d<bd){bd=d;best=i;}}return best;}
+function nearestColorHex(px,pal){let best=0,bd=Infinity;for(let i=0;i<pal.length;i++){const rgb=hexToRgb(pal[i]);if(!rgb)continue;const d=(px[0]-rgb[0])**2+(px[1]-rgb[1])**2+(px[2]-rgb[2])**2;if(d<bd){bd=d;best=i;}}return best;}
+function hexToRgb(hex){const m=hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:null;}
+function rgbToHex(r,g,b){return"#"+r.toString(16).padStart(2,"0")+g.toString(16).padStart(2,"0")+b.toString(16).padStart(2,"0");}
+
+function updateStatus(){
+  document.getElementById("st-size").textContent=cols+" x "+rows;
+  document.getElementById("st-stitches").textContent=(cols*rows).toLocaleString();
+  const ct=parseInt(document.getElementById("fabric").value);
+  document.getElementById("fabric-cm").textContent=(cols/ct*2.54).toFixed(1)+" x "+(rows/ct*2.54).toFixed(1)+" cm";
+}
+
+function exportPNG(){const a=document.createElement("a");a.download="cross-stitch.png";a.href=gc.toDataURL();a.click();}
+
+function exportSymbol(){
+  const sz=16,W=cols*sz+60,H=rows*sz+110;
+  const ec=document.createElement("canvas");ec.width=W;ec.height=H;
+  const ex=ec.getContext("2d");
+  ex.fillStyle="#fff";ex.fillRect(0,0,W,H);
+  ex.font="bold 14px serif";ex.fillStyle="#333";ex.fillText("Cross Stitch Pattern",10,20);
+  ex.font="11px sans-serif";ex.fillStyle="#666";ex.fillText(cols+"x"+rows+" stitches | "+document.getElementById("fabric").value+"ct",10,36);
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const ci=grid[r][c];const px=30+c*sz,py=50+r*sz;
+      if(ci>=0&&ci<palette.length){
+        ex.fillStyle=palette[ci];ex.fillRect(px,py,sz,sz);
+        const rgb=hexToRgb(palette[ci]);const lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
+        ex.fillStyle=lum>140?"#000":"#fff";ex.font=(sz-4)+"px monospace";ex.textAlign="center";ex.textBaseline="middle";
+        ex.fillText(SYMBOLS[ci%SYMBOLS.length],px+sz/2,py+sz/2);
+      }
+      ex.strokeStyle="rgba(0,0,0,0.15)";ex.lineWidth=0.5;ex.strokeRect(px,py,sz,sz);
+    }
+  }
+  const a=document.createElement("a");a.download="cross-stitch-chart.png";a.href=ec.toDataURL();a.click();
+}
+
+
+function generateDesc(){
+  const nc = palette.filter((_,i)=>{
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(grid[r][c]===i) return true;
+    return false;
+  }).length;
+  const ct = parseInt(document.getElementById("fabric").value);
+  const wIn = (cols/ct).toFixed(2), hIn = (rows/ct).toFixed(2);
+  const wCm = (cols/ct*2.54).toFixed(2), hCm = (rows/ct*2.54).toFixed(2);
+  const hoopIn = Math.ceil(Math.max(cols,rows)/ct + 2);
+  const fabricName = document.getElementById("fabric").options[document.getElementById("fabric").selectedIndex].text;
+
+  const desc = `All patterns contain a maximum of 20-25 colors.
+Paper size: A4 (210 x 297 mm, 8.3 x 11.7 inches)
+
+PURCHASE DETAILS
+- PDF Pattern in Color x 3 Grid Sizes
+- PDF Pattern in Black and White x 3 Grid Sizes
+- PDF Floss length
+- PDF for Pattern Keeper
+
+PATTERN SIZE
+DMC colors: ${nc}
+Fabric: ${fabricName}
+Stitches: ${cols} x ${rows}
+Size: ${wIn} x ${hIn} inches (${wCm} x ${hCm} cm)
+Hoop size: ${hoopIn} inches`;
+
+  document.getElementById("desc-box").textContent = desc;
+  document.getElementById("desc-box").style.color = "var(--text)";
+}
+
+function copyDesc(){
+  const txt = document.getElementById("desc-box").textContent;
+  if(!txt || txt === "Generate to see description") return;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn = document.getElementById("copy-btn");
+    btn.textContent = "Copied!";
+    btn.style.background = "var(--accent)";
+    btn.style.color = "#fff";
+    setTimeout(()=>{btn.textContent="Copy";btn.style.background="";btn.style.color="";}, 2000);
+  });
+}
+
+window.addEventListener("load",()=>{
+  resizeCanvasToArea();
+  initGrid();
+  updateStatus();
+  updatePaletteUI();
+});
+window.addEventListener("resize",()=>{
+  resizeCanvasToArea();
+  render();
+});
+</script>
+</body>
+</html>
