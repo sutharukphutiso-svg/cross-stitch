@@ -172,12 +172,12 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
       <div class="section-title">Stitch Size</div>
       <div class="section-body">
         <div class="ctrl">
-          <div class="ctrl-label"><span>เธเธงเนเธฒเธ ร— เธชเธนเธ</span><span class="val" id="sz-v">40 ร— 40</span></div>
+          <div class="ctrl-label"><span>Width ร— Height</span><span class="val" id="sz-v">40 ร— 40</span></div>
           <input type="range" id="sz" min="10" max="200" value="40" step="5" oninput="onSzChange()">
         </div>
         <div class="checkbox-row" style="margin-top:4px">
           <input type="checkbox" id="sq-lock" checked>
-          <label for="sq-lock">เธฅเนเธญเธเธชเธฑเธ”เธชเนเธงเธเธชเธตเนเน€เธซเธฅเธตเนเธขเธก</label>
+          <label for="sq-lock">Lock square ratio</label>
         </div>
       </div>
     </div>
@@ -187,7 +187,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
       <div class="section-title">Max Colors</div>
       <div class="section-body">
         <div class="ctrl">
-          <div class="ctrl-label"><span>เธเธณเธเธงเธเธชเธต</span><span class="val" id="nc-v">16</span></div>
+          <div class="ctrl-label"><span>Colors</span><span class="val" id="nc-v">16</span></div>
           <input type="range" id="nc" min="2" max="32" value="16" step="1" oninput="document.getElementById('nc-v').textContent=this.value;if(refImgEl.src&&refImgEl.style.display!=='none')convertRef()">
         </div>
       </div>
@@ -225,8 +225,8 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
       <div class="section-body">
         <div class="palette-grid" id="palette-grid"></div>
         <div style="margin-top:8px;display:flex;gap:4px">
-          <button class="btn sm" onclick="addCustomColor()">+ เน€เธเธดเนเธกเธชเธต</button>
-          <button class="btn sm danger" onclick="clearUnused()">เธฅเธเธชเธตเนเธกเนเนเธเน</button>
+          <button class="btn sm" onclick="addCustomColor()">+ Add color</button>
+          <button class="btn sm danger" onclick="clearUnused()">Remove unused</button>
         </div>
       </div>
     </div>
@@ -240,7 +240,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
           <button class="btn sm danger" onclick="clearCanvas()">๐—‘ Clear</button>
         </div>
         <button class="btn primary" style="width:100%;margin-bottom:4px" onclick="exportPNG()">โฌ Export PNG</button>
-        <button class="btn" style="width:100%" onclick="exportSymbol()">๐“ Export เนเธเธเธเธฑเธ</button>
+        <button class="btn" style="width:100%" onclick="exportSymbol()">๐“ Export Chart</button>
       </div>
     </div>
 
@@ -250,13 +250,13 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
       <div class="section-body">
         <div id="drop-ref" onclick="document.getElementById('ref-file').click()">
           <div style="font-size:20px">๐–ผ</div>
-          <div>เธฅเธฒเธเธฃเธนเธเธกเธฒเธงเธฒเธ เธซเธฃเธทเธญเธเธฅเธดเธเน€เธเธทเนเธญเน€เธฅเธทเธญเธ</div>
-          <div style="font-size:10px;margin-top:2px">เธฃเธนเธเธเธฐเธ–เธนเธเนเธเธฅเธเน€เธเนเธเธฅเธฒเธขเธเธฑเธเธญเธฑเธ•เนเธเธกเธฑเธ•เธด</div>
+          <div>Drag & drop or click to select</div>
+          <div style="font-size:10px;margin-top:2px">Image will auto-convert to pattern</div>
         </div>
         <img id="ref-preview">
         <input type="file" id="ref-file" accept="image/*" style="display:none">
         <div id="ref-btns" style="display:none;margin-top:6px">
-          <button class="btn sm primary" onclick="convertRef()" style="width:100%">๐” เนเธเธฅเธเนเธซเธกเน</button>
+          <button class="btn sm primary" onclick="convertRef()" style="width:100%">๐” Re-convert</button>
         </div>
       </div>
     </div>
@@ -265,7 +265,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
     <div class="section">
       <div class="section-title">History</div>
       <div class="section-body">
-        <div id="history-list"><div style="color:var(--muted)">เธขเธฑเธเนเธกเนเธกเธตเธเธฃเธฐเธงเธฑเธ•เธด</div></div>
+        <div id="history-list"><div style="color:var(--muted)">No history yet</div></div>
       </div>
     </div>
 
@@ -277,13 +277,13 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
 
   <!-- Toolbar -->
   <div id="toolbar">
-    <button class="btn sm tool-btn active" id="t-move" onclick="setTool('move',this)" title="เน€เธฅเธทเนเธญเธเธ เธฒเธ (M)">โ Move</button>
-    <button class="btn sm tool-btn" id="t-paint" onclick="setTool('paint',this)" title="เธงเธฒเธ” (P)">โ๏ธ Paint</button>
-    <button class="btn sm tool-btn" id="t-erase" onclick="setTool('erase',this)" title="เธฅเธ (E)">โฌ Erase</button>
-    <button class="btn sm tool-btn" id="t-fill" onclick="setTool('fill',this)" title="เน€เธ•เธดเธกเธชเธต (F)">๐ชฃ Fill</button>
-    <button class="btn sm tool-btn" id="t-pick" onclick="setTool('pick',this)" title="เน€เธฅเธทเธญเธเธชเธต (K)">๐’ Pick</button>
-    <button class="btn sm tool-btn" id="t-line" onclick="setTool('line',this)" title="เธงเธฒเธ”เน€เธชเนเธ (L)">๐“ Line</button>
-    <button class="btn sm tool-btn" id="t-select" onclick="setTool('select',this)" title="เน€เธฅเธทเธญเธเธเธทเนเธเธ—เธตเน (S)">โฌ Select</button>
+    <button class="btn sm tool-btn active" id="t-move" onclick="setTool('move',this)" title="Pan (M)">โ Move</button>
+    <button class="btn sm tool-btn" id="t-paint" onclick="setTool('paint',this)" title="Draw (P)">โ๏ธ Paint</button>
+    <button class="btn sm tool-btn" id="t-erase" onclick="setTool('erase',this)" title="Erase (E)">โฌ Erase</button>
+    <button class="btn sm tool-btn" id="t-fill" onclick="setTool('fill',this)" title="Fill (F)">๐ชฃ Fill</button>
+    <button class="btn sm tool-btn" id="t-pick" onclick="setTool('pick',this)" title="Pick color (K)">๐’ Pick</button>
+    <button class="btn sm tool-btn" id="t-line" onclick="setTool('line',this)" title="Draw line (L)">๐“ Line</button>
+    <button class="btn sm tool-btn" id="t-select" onclick="setTool('select',this)" title="Select area (S)">โฌ Select</button>
     <div class="tb-sep"></div>
     <button class="btn sm" onclick="zoom(1.25)">+</button>
     <div class="zoom-info" id="zoom-pct">100%</div>
@@ -301,11 +301,11 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
 
   <!-- Status bar -->
   <div id="status-bar">
-    <div class="status-item">เน€เธเธฃเธทเนเธญเธเธกเธทเธญ: <b id="st-tool">Move</b></div>
-    <div class="status-item">เธ•เธณเนเธซเธเนเธ: <b id="st-pos">โ€”</b></div>
-    <div class="status-item">เธเธเธฒเธ”: <b id="st-size">โ€” ร— โ€”</b></div>
+    <div class="status-item">Tool: <b id="st-tool">Move</b></div>
+    <div class="status-item">Position: <b id="st-pos">โ€”</b></div>
+    <div class="status-item">Size: <b id="st-size">โ€” ร— โ€”</b></div>
     <div class="status-item">Stitches: <b id="st-stitches">โ€”</b></div>
-    <div class="status-item" style="margin-left:auto">เธชเธตเธ—เธตเนเน€เธฅเธทเธญเธ: <span id="st-color" style="display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;border:1px solid #ccc;background:#fff;margin-right:3px"></span><b id="st-color-hex">โ€”</b></div>
+    <div class="status-item" style="margin-left:auto">Selected: <span id="st-color" style="display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;border:1px solid #ccc;background:#fff;margin-right:3px"></span><b id="st-color-hex">โ€”</b></div>
   </div>
 
 </div>
@@ -313,12 +313,12 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
 
 <!-- Color picker popup -->
 <div id="color-picker-wrap">
-  <div style="font-size:12px;color:var(--muted);margin-bottom:6px">เน€เธฅเธทเธญเธเธชเธต</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Pick color</div>
   <input type="color" id="color-picker" oninput="onPickerChange()">
   <input type="text" id="color-hex-input" placeholder="#ffffff" onchange="onHexInput()" maxlength="7">
   <div style="display:flex;gap:4px;margin-top:8px">
-    <button class="btn sm primary" onclick="confirmColor()" style="flex:1">เธ•เธเธฅเธ</button>
-    <button class="btn sm" onclick="closeColorPicker()" style="flex:1">เธขเธเน€เธฅเธดเธ</button>
+    <button class="btn sm primary" onclick="confirmColor()" style="flex:1">OK</button>
+    <button class="btn sm" onclick="closeColorPicker()" style="flex:1">Cancel</button>
   </div>
 </div>
 
@@ -548,7 +548,7 @@ function undo(){
 }
 function updateHistoryUI(){
   const el=document.getElementById('history-list');
-  if(!history.length){el.innerHTML='<div style="color:var(--muted)">เธขเธฑเธเนเธกเนเธกเธตเธเธฃเธฐเธงเธฑเธ•เธด</div>';return;}
+  if(!history.length){el.innerHTML='<div style="color:var(--muted)">No history yet</div>';return;}
   el.innerHTML=[...historyLabels].reverse().slice(0,6).map((l,i)=>`<div>#${historyLabels.length-i}: ${l}</div>`).join('');
 }
 
@@ -563,8 +563,8 @@ function updatePaletteUI(){
   const el=document.getElementById('palette-grid');
   el.innerHTML=palette.map((hex,i)=>
     `<div class="swatch${i===selColor?' selected':''}" style="background:${hex}" title="${hex}" onclick="selColor=${i};updatePaletteUI();updateSelColorStatus()" ondblclick="editColor(${i})"></div>`
-  ).join('')+`<div class="swatch-add" onclick="addCustomColor()" title="เน€เธเธดเนเธกเธชเธต">+</div>`;
-  document.getElementById('pal-count').textContent=palette.length+' เธชเธต';
+  ).join('')+`<div class="swatch-add" onclick="addCustomColor()" title="Add color">+</div>`;
+  document.getElementById('pal-count').textContent=palette.length+' colors';
   updateSelColorStatus();
 }
 
