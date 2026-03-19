@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross Stitch Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;font-size:13px;color:#1a1714;background:#f7f4ef}
+#app{display:flex;height:100vh}
+#sidebar{width:230px;flex-shrink:0;background:#fff;border-right:1px solid #e2ddd6;display:flex;flex-direction:column;overflow:hidden}
+#sb-head{padding:12px 14px 10px;border-bottom:1px solid #e2ddd6;flex-shrink:0}
+#sb-head h1{font-family:'DM Serif Display',serif;font-size:17px}
+#sb-head p{font-size:10px;color:#8a847c;margin-top:1px}
+#sb-body{flex:1;overflow-y:auto;padding:8px}
+#sb-body::-webkit-scrollbar{width:3px}
+#sb-body::-webkit-scrollbar-thumb{background:#e2ddd6;border-radius:2px}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#toolbar{height:42px;background:#fff;border-bottom:1px solid #e2ddd6;display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;overflow-x:auto}
+#canvas-area{flex:1;position:relative;overflow:hidden;background:#e8e4dc}
+#gc,#ov{position:absolute;top:0;left:0;image-rendering:pixelated}
+#ov{pointer-events:none}
+#statusbar{height:24px;background:#fff;border-top:1px solid #e2ddd6;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;font-size:11px;color:#8a847c}
+#statusbar b{color:#1a1714;font-weight:500}
+.sec{margin-bottom:8px}
+.sec-t{font-size:10px;font-weight:500;color:#8a847c;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.sec-b{background:#f7f4ef;border-radius:7px;padding:8px;border:1px solid #e2ddd6}
+.ctrl{margin-bottom:6px}.ctrl:last-child{margin-bottom:0}
+.cl{display:flex;justify-content:space-between;margin-bottom:2px;font-size:12px}
+.cl span:first-child{color:#8a847c}.cv{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:#e2ddd6;border-radius:2px;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#2d6a4f;border:2px solid #fff;box-shadow:0 0 0 1px #2d6a4f}
+select{width:100%;padding:5px 7px;border:1px solid #e2ddd6;border-radius:6px;background:#fff;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
+.cb-row{display:flex;align-items:center;gap:5px;font-size:12px;margin-top:4px}
+input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
+.pg{display:flex;flex-wrap:wrap;gap:3px;max-height:110px;overflow-y:auto}
+.sw{width:22px;height:22px;border-radius:3px;cursor:pointer;border:2px solid transparent;flex-shrink:0}
+.sw.sel{border-color:#2d6a4f;box-shadow:0 0 0 1px #2d6a4f}
+.sw-add{width:22px;height:22px;border-radius:3px;cursor:pointer;border:1.5px dashed #e2ddd6;display:flex;align-items:center;justify-content:center;color:#8a847c;font-size:14px}
+.sw-add:hover{border-color:#2d6a4f;color:#2d6a4f}
+.btn{padding:5px 10px;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid #e2ddd6;border-radius:6px;background:#fff;cursor:pointer;color:#1a1714;white-space:nowrap}
+.btn:hover{background:#f7f4ef}
+.btn.pr{background:#2d6a4f;color:#fff;border-color:#2d6a4f}
+.btn.dr{color:#c0392b;border-color:#c0392b}
+.btn-r{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.tb-btn{padding:5px 10px;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid #e2ddd6;border-radius:6px;background:#fff;cursor:pointer;color:#8a847c;white-space:nowrap;flex-shrink:0}
+.tb-btn:hover{background:#f7f4ef;color:#1a1714}
+.tb-btn.act{background:#2d6a4f;color:#fff;border-color:#2d6a4f}
+.zi{font-size:11px;color:#8a847c;min-width:36px;text-align:center;flex-shrink:0}
+#dref{border:1.5px dashed #e2ddd6;border-radius:7px;padding:10px;text-align:center;cursor:pointer;color:#8a847c;font-size:11px;line-height:1.5}
+#dref:hover{border-color:#2d6a4f;color:#2d6a4f}
+#rimg{max-width:100%;border-radius:5px;margin-top:5px;display:none;border:1px solid #e2ddd6}
+.di{display:flex;align-items:center;gap:5px;padding:2px 0;border-bottom:1px solid #f0ede8;font-size:11px}
+.dd{width:14px;height:14px;border-radius:2px;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+.dn{font-weight:500;color:#1a1714}
+.dna{color:#8a847c;font-size:10px}
+.dc{color:#8a847c;font-size:10px;margin-left:auto;flex-shrink:0}
+#dlist{max-height:160px;overflow-y:auto;margin-top:4px}
+#dbox{font-size:11px;line-height:1.6;white-space:pre-wrap;background:#fff;border:1px solid #e2ddd6;border-radius:6px;padding:8px;max-height:140px;overflow-y:auto;font-family:monospace;color:#8a847c}
+#cpick{display:none;position:fixed;z-index:999;background:#fff;border:1px solid #e2ddd6;border-radius:9px;padding:11px;box-shadow:0 6px 20px rgba(0,0,0,.12);width:190px}
+#cpick input[type=color]{width:100%;height:34px;border:none;border-radius:5px;cursor:pointer;padding:0}
+#cpick input[type=text]{width:100%;margin-top:5px;padding:4px 7px;border:1px solid #e2ddd6;border-radius:5px;font-size:12px;font-family:monospace}
+.fb{display:inline-block;background:#f0f7f4;color:#2d6a4f;border:1px solid #74c69d;border-radius:3px;padding:1px 6px;font-size:10px;margin-top:3px}
+#hl{max-height:60px;overflow-y:auto;font-size:11px;color:#8a847c}
+#hl div{padding:1px 0;border-bottom:1px solid #f0ede8}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="sidebar">
+<div id="sb-head"><h1>Cross Stitch</h1><p>Studio</p></div>
+<div id="sb-body">
+
+<div class="sec"><div class="sec-t">Stitch Size</div><div class="sec-b">
+<div class="ctrl"><div class="cl"><span>W x H</span><span class="cv" id="szv">40 x 40</span></div>
+<input type="range" id="sz" min="10" max="200" value="40" step="5" oninput="onSz()"></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Max Colors</div><div class="sec-b">
+<div class="ctrl"><div class="cl"><span>Colors</span><span class="cv" id="ncv">16</span></div>
+<input type="range" id="nc" min="2" max="32" value="16" step="1" oninput="onNc()"></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Background</div><div class="sec-b">
+<div class="ctrl"><div class="cl"><span>Remove light bg</span><span class="cv" id="bgv">220</span></div>
+<input type="range" id="bg" min="0" max="255" value="220" step="5" oninput="onBg()"></div>
+<div style="font-size:10px;color:#8a847c">0=keep all | 255=remove all light</div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Fabric</div><div class="sec-b">
+<select id="fab" onchange="updSt()">
+<option value="11">Aida 11 ct</option><option value="14" selected>Aida 14 ct</option>
+<option value="16">Aida 16 ct</option><option value="18">Aida 18 ct</option>
+<option value="28">Evenweave 28 ct</option><option value="32">Evenweave 32 ct</option>
+</select>
+<div class="fb" id="fcm">-- x -- cm</div>
+<div class="cb-row"><input type="checkbox" id="sgr" checked onchange="render()"><label for="sgr">Show Grid</label></div>
+<div class="cb-row"><input type="checkbox" id="ssy" checked onchange="render()"><label for="ssy">Show Symbols</label></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Palette <span id="pcnt" style="float:right;color:#1a1714;font-weight:500">0</span></div><div class="sec-b">
+<div class="pg" id="pgrid"></div>
+<div class="btn-r"><button class="btn" onclick="addCol()">+ Add color</button><button class="btn dr" onclick="clearUnused()">Remove unused</button></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">DMC Thread List</div><div class="sec-b">
+<div id="dlist"><div style="color:#8a847c;font-size:11px">Convert an image first</div></div>
+<div class="btn-r"><button class="btn pr" onclick="xFlossPNG()">Export Floss PNG</button><button class="btn" onclick="xFlossCSV()">Export CSV</button></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Product Description</div><div class="sec-b">
+<div id="dbox">Click Generate to create Etsy description</div>
+<div class="btn-r"><button class="btn pr" onclick="genDesc()">Generate</button><button class="btn" id="cbtn" onclick="copyDesc()">Copy</button></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Actions</div><div class="sec-b">
+<div class="btn-r"><button class="btn" onclick="undo()">Undo</button><button class="btn dr" onclick="clearCanvas()">Clear</button></div>
+<div style="margin-top:5px"><button class="btn pr" style="width:100%;margin-bottom:4px" onclick="xPNG()">Export PNG</button></div>
+<button class="btn" style="width:100%" onclick="xChart()">Export Chart</button>
+</div></div>
+
+<div class="sec"><div class="sec-t">Reference Image</div><div class="sec-b">
+<div id="dref" onclick="document.getElementById('rfile').click()">
+<div style="font-size:16px;margin-bottom:2px">[img]</div>
+<div>Drag & drop or click to select</div>
+<div style="font-size:10px">Auto-converts to pattern</div>
+</div>
+<img id="rimg">
+<input type="file" id="rfile" accept="image/*" style="display:none">
+<div id="rbtns" style="display:none;margin-top:5px"><button class="btn pr" style="width:100%" onclick="cvtRef()">Re-convert</button></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">History</div><div class="sec-b"><div id="hl"><div>No history yet</div></div></div></div>
+
+</div></div>
+
+<div id="main">
+<div id="toolbar">
+<button class="tb-btn act" id="t-move" onclick="setTool('move',this)">Move</button>
+<button class="tb-btn" id="t-paint" onclick="setTool('paint',this)">Paint</button>
+<button class="tb-btn" id="t-erase" onclick="setTool('erase',this)">Erase</button>
+<button class="tb-btn" id="t-fill" onclick="setTool('fill',this)">Fill</button>
+<button class="tb-btn" id="t-pick" onclick="setTool('pick',this)">Pick</button>
+<button class="tb-btn" id="t-line" onclick="setTool('line',this)">Line</button>
+<button class="tb-btn" id="t-select" onclick="setTool('select',this)">Select</button>
+<div style="width:1px;height:18px;background:#e2ddd6;margin:0 2px;flex-shrink:0"></div>
+<button class="tb-btn" onclick="doZoom(1.25)">+</button>
+<div class="zi" id="zpct">100%</div>
+<button class="tb-btn" onclick="doZoom(0.8)">-</button>
+<button class="tb-btn" onclick="fitZoom()">Reset</button>
+</div>
+<div id="canvas-area"><canvas id="gc"></canvas><canvas id="ov"></canvas></div>
+<div id="statusbar">
+<span>Tool: <b id="stl">Move</b></span>
+<span>Pos: <b id="stp">--</b></span>
+<span>Size: <b id="sts">-- x --</b></span>
+<span>Stitches: <b id="stc">--</b></span>
+<span style="margin-left:auto">Color: <span id="stcol" style="display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:middle;border:1px solid #ccc;margin-right:2px"></span><b id="sthex">--</b></span>
+</div>
+</div>
+</div>
+
+<div id="cpick">
+<div style="font-size:11px;color:#8a847c;margin-bottom:5px">Pick color</div>
+<input type="color" id="cpc" oninput="cpChg()">
+<input type="text" id="cph" placeholder="#ffffff" onchange="cpHex()" maxlength="7">
+<div class="btn-r" style="margin-top:7px">
+<button class="btn pr" onclick="cpOK()" style="flex:1">OK</button>
+<button class="btn" onclick="cpX()" style="flex:1">Cancel</button>
+</div>
+</div>
+
+<script>
+// SYMBOLS
+var SYM=['x','o','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','1','2','3','4'];
+
+// DMC DATABASE (abbreviated - key colors)
+var DMC=[
+["blanc","White",255,255,255],[310,"Black",0,0,0],[321,"Red",196,40,54],
+[400,"Mahogany-DK",139,69,19],[402,"Mahogany-LT",255,178,122],[413,"Pewter-DK",84,84,84],
+[414,"Steel Gray",169,169,169],[415,"Pearl Gray",210,210,210],[433,"Brown-MED",138,90,50],
+[434,"Brown-LT",165,115,70],[435,"Brown-VY LT",188,142,100],[436,"Tan",205,165,115],
+[437,"Tan-LT",222,190,145],[469,"Avocado Green",100,130,60],[470,"Avocado-LT",130,165,80],
+[500,"Blue Green-VY DK",30,80,60],[501,"Blue Green-DK",50,110,85],[502,"Blue Green",80,140,110],
+[503,"Blue Green-MED",110,170,140],[519,"Sky Blue",140,190,220],[520,"Fern Green-DK",80,100,60],
+[522,"Fern Green",130,150,100],[523,"Fern Green-LT",160,175,130],[524,"Fern Green-VY LT",185,200,160],
+[535,"Ash Gray-VY LT",90,90,90],[543,"Beige Brown-ULT VY LT",225,210,190],
+[550,"Violet-VY DK",90,30,100],[552,"Violet-MED",130,60,140],[553,"Violet",165,100,175],
+[554,"Violet-LT",210,165,215],[561,"Jade-VY DK",40,110,80],[562,"Jade-MED",70,150,110],
+[563,"Jade-LT",115,185,150],[597,"Turquoise",70,175,185],[598,"Turquoise-LT",130,205,210],
+[600,"Cranberry-VY DK",185,30,80],[601,"Cranberry-DK",205,50,100],[602,"Cranberry-MED",220,80,120],
+[603,"Cranberry",235,120,155],[604,"Cranberry-LT",245,170,190],[606,"Orange Red-BRT",230,50,20],
+[608,"Orange-BRT",240,100,30],[610,"Drab Brown-DK",130,105,70],[611,"Drab Brown",155,130,90],
+[612,"Drab Brown-LT",185,165,130],[632,"Desert Sand-ULT DK",140,85,55],[640,"Beige Gray-VY DK",130,120,100],
+[642,"Beige Gray-DK",165,155,135],[644,"Beige Gray-MED",200,195,180],[645,"Beaver Gray-VY DK",100,95,90],
+[646,"Beaver Gray-DK",130,125,120],[647,"Beaver Gray-MED",165,160,155],[648,"Beaver Gray-LT",200,195,190],
+[666,"Red-BRT",215,30,45],[676,"Old Gold-LT",220,195,130],[677,"Old Gold-VY LT",235,220,175],
+[680,"Old Gold-DK",185,150,60],[699,"Green",20,120,40],[700,"Green-BRT",30,140,50],
+[701,"Green-LT",60,165,75],[702,"Kelly Green",80,185,95],[703,"Chartreuse",110,200,110],
+[712,"Cream",250,240,220],[718,"Plum",155,40,110],[720,"Orange Spice-DK",210,95,30],
+[721,"Orange Spice-MED",225,125,55],[722,"Orange Spice-LT",240,165,100],[725,"Topaz-MED LT",250,200,60],
+[726,"Topaz-LT",250,215,100],[727,"Topaz-VY LT",255,235,170],[729,"Old Gold-MED",200,165,70],
+[738,"Tan-VY LT",230,200,155],[739,"Tan-ULT VY LT",245,225,195],[740,"Tangerine",250,140,20],
+[741,"Tangerine-MED",250,165,50],[742,"Tangerine-LT",250,195,95],[743,"Yellow-MED",250,220,120],
+[744,"Yellow-PALE",250,235,165],[746,"Off White",255,250,230],[747,"Sky Blue-VY LT",220,245,250],
+[754,"Peach-LT",245,195,165],[758,"Terra Cotta-VY LT",235,175,150],[760,"Salmon",235,155,140],
+[761,"Salmon-LT",245,185,175],[762,"Pearl Gray-VY LT",235,235,235],[772,"Yellow Green-VY LT",215,230,190],
+[775,"Baby Blue-VY LT",210,235,245],[776,"Pink-MED",245,170,175],[780,"Topaz-ULT VY DK",155,110,30],
+[781,"Topaz-VY DK",175,130,45],[782,"Topaz-DK",195,150,55],[783,"Topaz-MED",215,175,80],
+[791,"Cornflower Blue-VY DK",65,75,135],[792,"Cornflower Blue-DK",85,100,165],
+[793,"Cornflower Blue-MED",115,130,190],[794,"Cornflower Blue-LT",155,170,215],
+[796,"Royal Blue-DK",30,70,150],[797,"Royal Blue",40,90,175],[798,"Delft Blue-DK",70,115,185],
+[799,"Delft Blue-MED",105,145,205],[800,"Delft Blue-PALE",175,200,225],[801,"Coffee Brown-DK",110,65,35],
+[806,"Peacock Blue-DK",45,150,175],[807,"Peacock Blue",75,175,200],[813,"Blue-LT",155,190,220],
+[814,"Garnet-DK",140,20,40],[815,"Garnet-MED",165,30,55],[816,"Garnet",185,40,65],
+[817,"Coral Red-VY DK",195,50,50],[818,"Baby Pink",255,205,200],[819,"Baby Pink-LT",255,225,220],
+[822,"Beige Gray-LT",220,215,195],[823,"Navy Blue-DK",30,40,105],[824,"Blue-VY DK",45,95,150],
+[825,"Blue-DK",60,120,175],[826,"Blue-MED",85,145,195],[827,"Blue-VY LT",175,210,235],
+[838,"Beige Brown-VY DK",95,70,45],[839,"Beige Brown-DK",120,90,60],[840,"Beige Brown-MED",150,115,80],
+[841,"Beige Brown-LT",185,155,120],[842,"Beige Brown-VY LT",215,190,160],[869,"Hazel Nut Brown-VY DK",130,90,45],
+[890,"Pistachio Green-ULT DK",30,80,35],[891,"Carnation-DK",240,90,110],[892,"Carnation-MED",245,120,135],
+[893,"Carnation-LT",250,155,165],[894,"Carnation-VY LT",255,190,195],[895,"Hunter Green-VY DK",30,90,40],
+[898,"Coffee Brown-VY DK",90,50,25],[899,"Rose-MED",240,130,145],[900,"Burnt Orange-DK",200,70,20],
+[902,"Garnet-VY DK",120,25,45],[904,"Parrot Green-VY DK",70,135,50],[905,"Parrot Green-DK",90,165,65],
+[906,"Parrot Green-MED",120,195,90],[907,"Parrot Green-LT",160,220,120],[909,"Emerald Green-VY DK",25,130,60],
+[910,"Emerald Green-DK",35,155,75],[911,"Emerald Green-MED",50,175,90],[912,"Emerald Green-LT",70,200,110],
+[913,"Nile Green-MED",120,200,150],[918,"Red Copper-DK",155,65,35],[919,"Red Copper",185,85,45],
+[920,"Copper-MED",200,105,60],[921,"Copper",215,125,75],[922,"Copper-LT",230,150,100],
+[924,"Gray Green-VY DK",75,105,95],[926,"Gray Green-MED",130,160,150],[927,"Gray Green-LT",170,195,185],
+[928,"Gray Green-VY LT",205,220,215],[930,"Antique Blue-DK",80,105,130],[931,"Antique Blue-MED",110,140,165],
+[932,"Antique Blue-LT",155,180,200],[937,"Avocado Green-MED",95,125,60],[938,"Coffee Brown-ULT DK",70,40,20],
+[943,"Aquamarine-MED",50,185,160],[945,"Tawny",245,190,155],[946,"Burnt Orange-MED",220,95,25],
+[947,"Burnt Orange",235,120,40],[948,"Peach-VY LT",255,225,210],[950,"Desert Sand-LT",225,185,155],
+[951,"Tawny-LT",250,215,185],[954,"Nile Green",110,195,140],[955,"Nile Green-LT",155,220,175],
+[956,"Geranium",245,120,115],[958,"Sea Green-DK",50,185,165],[959,"Sea Green-MED",80,200,185],
+[961,"Dusty Rose-DK",210,110,120],[962,"Dusty Rose-MED",230,145,150],[963,"Dusty Rose-ULT VY LT",255,210,210],
+[966,"Baby Green-MED",170,215,175],[970,"Pumpkin-LT",240,135,45],[971,"Pumpkin",240,120,20],
+[972,"Canary-DEEP",250,175,20],[975,"Golden Brown-DK",150,95,30],[976,"Golden Brown-MED",200,145,70],
+[977,"Golden Brown-LT",225,175,105],[986,"Forest Green-VY DK",50,90,40],[987,"Forest Green-DK",70,120,55],
+[988,"Forest Green-MED",95,150,75],[989,"Forest Green",120,175,100],[991,"Aquamarine-DK",50,135,115],
+[992,"Aquamarine-MED",75,170,150],[993,"Aquamarine-LT",115,195,175],[995,"Electric Blue-DK",30,145,210],
+[3011,"Khaki Green-DK",130,140,80],[3012,"Khaki Green-MED",155,165,100],[3013,"Khaki Green-LT",185,195,140],
+[3021,"Brown Gray-VY DK",75,70,55],[3031,"Mocha Brown-VY DK",80,60,40],[3032,"Mocha Brown-MED",175,155,130],
+[3033,"Mocha Brown-VY LT",215,200,180],[3041,"Antique Violet-MED",160,130,155],[3042,"Antique Violet-LT",195,170,190],
+[3045,"Yellow Beige-DK",195,165,105],[3046,"Yellow Beige-MED",215,190,140],[3047,"Yellow Beige-LT",235,220,185],
+[3051,"Green Gray-DK",90,105,70],[3052,"Green Gray-MED",130,150,105],[3053,"Green Gray",160,175,135],
+[3325,"Baby Blue-LT",175,205,230],[3326,"Rose-LT",250,175,185],[3328,"Salmon-DK",220,120,110],
+[3340,"Apricot-MED",250,150,100],[3341,"Apricot",250,180,140],[3345,"Hunter Green-DK",40,105,45],
+[3346,"Hunter Green",60,130,60],[3347,"Yellow Green-MED",95,160,90],[3348,"Yellow Green-LT",175,210,155],
+[3350,"Dusty Rose-ULT DK",190,75,100],[3354,"Dusty Rose-LT",235,175,180],[3362,"Pine Green-DK",80,110,65],
+[3363,"Pine Green-MED",105,140,85],[3364,"Pine Green",140,170,115],[3371,"Black Brown",35,20,10],
+[3685,"Mauve-VY DK",145,40,70],[3687,"Mauve",200,115,130],[3688,"Mauve-MED",225,165,175],
+[3689,"Mauve-LT",245,195,200],[3705,"Melon-DK",250,120,110],[3712,"Salmon-MED",235,140,125],
+[3721,"Shell Pink-DK",185,95,95],[3731,"Dusty Rose-VY DK",210,100,115],[3733,"Dusty Rose",235,145,155],
+[3746,"Blue Violet-DK",110,100,175],[3747,"Blue Violet-VY LT",200,205,235],[3750,"Antique Blue-VY DK",50,75,105],
+[3752,"Antique Blue-VY LT",185,200,220],[3755,"Baby Blue",120,165,205],[3760,"Wedgewood-MED",60,125,170],
+[3761,"Sky Blue-LT",145,195,225],[3765,"Peacock Blue-VY DK",35,130,155],[3768,"Gray Green-DK",95,125,120],
+[3776,"Mahogany-LT",200,130,75],[3777,"Terra Cotta-VY DK",165,70,55],[3778,"Terra Cotta-LT",210,145,125],
+[3781,"Mocha Brown-DK",120,95,70],[3782,"Mocha Brown-LT",200,180,155],[3799,"Pewter Gray-VY DK",65,65,65],
+[3820,"Straw-DK",220,185,90],[3821,"Straw",235,205,120],[3822,"Straw-LT",245,225,165],
+[3823,"Yellow-ULT PALE",255,250,215],[3824,"Apricot-LT",250,195,170],[3825,"Pumpkin-PALE",250,175,110],
+[3826,"Golden Brown",185,130,60],[3827,"Golden Brown-PALE",240,190,120],[3828,"Hazel Nut Brown",175,140,90],
+[3829,"Old Gold-VY DK",160,125,35],[3830,"Terra Cotta",185,90,70],[3831,"Raspberry-DK",175,40,70],
+[3832,"Raspberry-MED",205,75,100],[3833,"Raspberry-LT",225,120,140],[3834,"Grape-DK",100,55,100],
+[3835,"Grape-MED",140,90,140],[3836,"Grape-LT",180,140,185],[3837,"Lavender-ULT DK",110,65,140],
+[3838,"Lavender-DK",100,100,175],[3839,"Lavender-MED",130,130,200],[3840,"Lavender-LT",175,175,220],
+[3847,"Teal Green-DK",45,135,120],[3848,"Teal Green-MED",65,160,145],[3849,"Teal Green-LT",90,185,170],
+[3853,"Autumn Gold-DK",225,140,45],[3854,"Autumn Gold-MED",235,165,80],[3855,"Autumn Gold-LT",245,200,130],
+[3856,"Mahogany-ULT VY LT",255,215,185],[3857,"Rosewood-DK",110,40,30],[3858,"Rosewood-MED",155,75,60],
+[3862,"Mocha Beige-DK",145,115,80],[3863,"Mocha Beige-MED",175,145,105],[3864,"Mocha Beige-LT",210,185,155],
+[3865,"Winter White",250,248,240],[3866,"Mocha Brown-ULT VY LT",245,240,230]
+];
+
+// STATE
+var COLS=40,ROWS=40,CELL=8,ZL=1,VX=0,VY=0;
+var grid=[],palette=[],SI=0,tool='move';
+var hist=[],hlab=[];
+var painting=false,panSt=null,lineSt=null,selRect=null;
+var cpTgt=-1,refSrc=null;
+
+var gc=document.getElementById('gc');
+var ctx=gc.getContext('2d');
+var ov=document.getElementById('ov');
+var octx=ov.getContext('2d');
+var area=document.getElementById('canvas-area');
+
+// HELPERS
+function h2r(h){var m=h.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:null;}
+function r2h(r,g,b){return'#'+[r,g,b].map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');}
+function nRgb(px,pal){var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var d=Math.pow(px[0]-pal[i][0],2)+Math.pow(px[1]-pal[i][1],2)+Math.pow(px[2]-pal[i][2],2);if(d<bd){bd=d;b=i;}}return b;}
+function nHex(px,pal){var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var rgb=h2r(pal[i]);if(!rgb)continue;var d=Math.pow(px[0]-rgb[0],2)+Math.pow(px[1]-rgb[1],2)+Math.pow(px[2]-rgb[2],2);if(d<bd){bd=d;b=i;}}return b;}
+function nDMC(hex){var rgb=h2r(hex);if(!rgb)return{num:'--',name:'Unknown',hex:hex};var b=null,bd=1e9;for(var i=0;i<DMC.length;i++){var e=DMC[i];var d=Math.pow(rgb[0]-e[2],2)+Math.pow(rgb[1]-e[3],2)+Math.pow(rgb[2]-e[4],2);if(d<bd){bd=d;b={num:e[0],name:e[1],hex:r2h(e[2],e[3],e[4])};}}return b||{num:'--',name:'Unknown',hex:hex};}
+function inB(c,r){return c>=0&&c<COLS&&r>=0&&r<ROWS;}
+function getCell(e){var rc=gc.getBoundingClientRect();var ds=Math.max(0.1,CELL*ZL);return[Math.floor((e.clientX-rc.left)/ds+VX),Math.floor((e.clientY-rc.top)/ds+VY)];}
+
+// CANVAS SIZE
+function szCanvas(){gc.width=area.clientWidth;gc.height=area.clientHeight;ov.width=gc.width;ov.height=gc.height;}
+
+// RENDER
+function render(){
+  var W=gc.width,H=gc.height;
+  var ds=Math.max(0.1,CELL*ZL);
+  var sg=document.getElementById('sgr').checked;
+  var ss=document.getElementById('ssy').checked;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f0ece3';ctx.fillRect(0,0,W,H);
+  for(var r=0;r<ROWS;r++){
+    for(var c=0;c<COLS;c++){
+      var px=Math.round((c-VX)*ds),py=Math.round((r-VY)*ds);
+      if(px+ds<0||py+ds<0||px>W||py>H)continue;
+      var ci=grid[r][c];
+      if(ci>=0&&ci<palette.length){
+        ctx.fillStyle=palette[ci];ctx.fillRect(px,py,ds,ds);
+        if(ss&&ds>=8){
+          var rgb=h2r(palette[ci]);
+          var lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
+          ctx.fillStyle=lum>140?'rgba(0,0,0,.6)':'rgba(255,255,255,.8)';
+          ctx.font=Math.max(6,ds-3)+'px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText(SYM[ci%SYM.length],px+ds/2,py+ds/2);
+        }
+      }
+      if(sg&&ds>=3){ctx.strokeStyle='rgba(100,100,100,.18)';ctx.lineWidth=.5;ctx.strokeRect(px,py,ds,ds);}
+    }
+  }
+  if(sg&&ds>=3){
+    ctx.strokeStyle='rgba(50,50,50,.3)';ctx.lineWidth=1;
+    for(var r2=0;r2<=ROWS;r2+=10){var py2=Math.round((r2-VY)*ds);if(py2>=0&&py2<=H){ctx.beginPath();ctx.moveTo(0,py2);ctx.lineTo(W,py2);ctx.stroke();}}
+    for(var c2=0;c2<=COLS;c2+=10){var px2=Math.round((c2-VX)*ds);if(px2>=0&&px2<=W){ctx.beginPath();ctx.moveTo(px2,0);ctx.lineTo(px2,H);ctx.stroke();}}
+  }
+  octx.clearRect(0,0,ov.width,ov.height);
+  if(selRect){
+    var ds2=Math.max(.1,CELL*ZL);
+    var spx=Math.round((selRect.x-VX)*ds2),spy=Math.round((selRect.y-VY)*ds2);
+    octx.strokeStyle='rgba(45,106,79,.9)';octx.lineWidth=1.5;octx.setLineDash([4,3]);
+    octx.strokeRect(spx,spy,selRect.w*ds2,selRect.h*ds2);octx.setLineDash([]);
+    octx.fillStyle='rgba(45,106,79,.08)';octx.fillRect(spx,spy,selRect.w*ds2,selRect.h*ds2);
+  }
+}
+
+// ZOOM
+function doZoom(f){ZL=Math.max(.05,Math.min(16,ZL*f));document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';render();}
+function fitZoom(){VX=0;VY=0;ZL=Math.min(gc.width/(COLS*CELL),gc.height/(ROWS*CELL));document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';render();}
+area.addEventListener('wheel',function(e){
+  e.preventDefault();
+  var rc=gc.getBoundingClientRect(),ds=Math.max(.1,CELL*ZL);
+  var cx=(e.clientX-rc.left)/ds+VX,cy=(e.clientY-rc.top)/ds+VY;
+  ZL=Math.max(.05,Math.min(16,ZL*(e.deltaY<0?1.15:.87)));
+  var ds2=Math.max(.1,CELL*ZL);
+  VX=Math.max(0,cx-(e.clientX-rc.left)/ds2);VY=Math.max(0,cy-(e.clientY-rc.top)/ds2);
+  document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';render();
+},{passive:false});
+
+// TOOLS
+function setTool(t,btn){
+  tool=t;
+  document.querySelectorAll('.tb-btn').forEach(function(b){b.classList.remove('act');});
+  btn.classList.add('act');
+  var cur={move:'grab',paint:'crosshair',erase:'cell',fill:'crosshair',pick:'crosshair',line:'crosshair',select:'default'};
+  area.style.cursor=cur[t]||'crosshair';
+  document.getElementById('stl').textContent=btn.textContent.trim();
+}
+function paintCell(c,r){
+  if(!inB(c,r))return false;
+  if(tool==='erase'){if(grid[r][c]===-1)return false;grid[r][c]=-1;return true;}
+  if(tool==='paint'){if(SI<0||SI>=palette.length||grid[r][c]===SI)return false;grid[r][c]=SI;return true;}
+  return false;
+}
+function flood(c,r,from,to){
+  if(from===to)return;
+  var stk=[[c,r]];
+  while(stk.length){var p=stk.pop(),cc=p[0],rr=p[1];if(!inB(cc,rr)||grid[rr][cc]!==from)continue;grid[rr][cc]=to;stk.push([cc+1,rr],[cc-1,rr],[cc,rr+1],[cc,rr-1]);}
+}
+function drawLine(x0,y0,x1,y1){
+  var dx=Math.abs(x1-x0),dy=Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,err=dx-dy;
+  while(true){if(inB(x0,y0)&&SI>=0&&SI<palette.length)grid[y0][x0]=SI;if(x0===x1&&y0===y1)break;var e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}}
+}
+
+// MOUSE
+area.addEventListener('mousedown',function(e){
+  var p=getCell(e),c=p[0],r=p[1];
+  if(tool==='move'){painting=true;area.style.cursor='grabbing';panSt={x:e.clientX,y:e.clientY,vx:VX,vy:VY};return;}
+  if(tool==='pick'){if(inB(c,r)&&grid[r][c]>=0){SI=grid[r][c];updPal();updSS();}return;}
+  if(tool==='fill'){if(!inB(c,r))return;pushH('Fill');flood(c,r,grid[r][c],SI);render();return;}
+  if(tool==='line'){lineSt=[c,r];return;}
+  if(tool==='select'){selRect={x:c,y:r,w:0,h:0};return;}
+  pushH(tool==='erase'?'Erase':'Paint');painting=true;paintCell(c,r);render();
+});
+area.addEventListener('mousemove',function(e){
+  var p=getCell(e),c=p[0],r=p[1];
+  document.getElementById('stp').textContent=inB(c,r)?(c+1)+','+(r+1):'--';
+  if(tool==='move'&&painting&&panSt){var ds=Math.max(.1,CELL*ZL);VX=Math.max(0,panSt.vx-(e.clientX-panSt.x)/ds);VY=Math.max(0,panSt.vy-(e.clientY-panSt.y)/ds);render();return;}
+  if(tool==='select'&&selRect&&e.buttons){selRect.w=c-selRect.x+1;selRect.h=r-selRect.y+1;render();return;}
+  if(painting&&(tool==='paint'||tool==='erase')){paintCell(c,r);render();}
+});
+area.addEventListener('mouseup',function(e){
+  var p=getCell(e),c=p[0],r=p[1];
+  if(tool==='line'&&lineSt){pushH('Line');drawLine(lineSt[0],lineSt[1],c,r);lineSt=null;render();}
+  if(tool==='move')area.style.cursor='grab';
+  painting=false;
+});
+area.addEventListener('mouseleave',function(){painting=false;document.getElementById('stp').textContent='--';});
+
+// KEYBOARD
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  var m={m:'move',p:'paint',e:'erase',f:'fill',k:'pick',l:'line',s:'select'};
+  if(m[e.key.toLowerCase()]){var b=document.getElementById('t-'+m[e.key.toLowerCase()]);if(b)setTool(m[e.key.toLowerCase()],b);}
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
+  if(e.key==='Escape'){selRect=null;render();}
+});
+
+// HISTORY
+function pushH(l){hist.push(grid.map(function(r){return r.slice();}));hlab.push(l);if(hist.length>40){hist.shift();hlab.shift();}updH();}
+function undo(){if(!hist.length)return;grid=hist.pop();hlab.pop();updH();render();}
+function updH(){var el=document.getElementById('hl');if(!hist.length){el.innerHTML='<div>No history yet</div>';return;}el.innerHTML=hlab.slice().reverse().slice(0,6).map(function(l,i){return '<div>#'+(hlab.length-i)+': '+l+'</div>';}).join('');}
+function clearCanvas(){pushH('Clear');grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});selRect=null;render();}
+
+// PALETTE
+function updPal(){
+  var el=document.getElementById('pgrid');
+  el.innerHTML=palette.map(function(h,i){return '<div class="sw'+(i===SI?' sel':'')+'" style="background:'+h+'" title="'+h+'" onclick="SI='+i+';updPal();updSS()" ondblclick="editCol('+i+')"></div>';}).join('')+'<div class="sw-add" onclick="addCol()" title="Add">+</div>';
+  document.getElementById('pcnt').textContent=palette.length;
+  updSS();updDMC();
+}
+function updSS(){var h=palette[SI]||'#fff';document.getElementById('stcol').style.background=h;document.getElementById('sthex').textContent=h;}
+function clearUnused(){
+  var used=new Set();for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)used.add(grid[r][c]);
+  var np=palette.filter(function(_,i){return used.has(i);});
+  var rm=new Array(palette.length).fill(-1);var ni=0;
+  palette.forEach(function(_,i){if(used.has(i))rm[i]=ni++;});
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)grid[r][c]=rm[grid[r][c]];
+  palette=np;SI=Math.min(SI,palette.length-1);updPal();render();
+}
+
+// COLOR PICKER
+function addCol(){cpTgt=-1;openCP('#4a9eff');}
+function editCol(i){cpTgt=i;openCP(palette[i]);}
+function openCP(hex){var el=document.getElementById('cpick');document.getElementById('cpc').value=hex;document.getElementById('cph').value=hex;el.style.display='block';el.style.top='80px';el.style.right='14px';}
+function cpChg(){document.getElementById('cph').value=document.getElementById('cpc').value;}
+function cpHex(){var v=document.getElementById('cph').value.trim();if(!v.startsWith('#'))v='#'+v;if(/^#[0-9a-fA-F]{6}$/.test(v))document.getElementById('cpc').value=v;}
+function cpOK(){var hex=document.getElementById('cpc').value;if(cpTgt===-1){palette.push(hex);SI=palette.length-1;}else palette[cpTgt]=hex;updPal();render();cpX();}
+function cpX(){document.getElementById('cpick').style.display='none';}
+document.addEventListener('click',function(e){var el=document.getElementById('cpick');if(el.style.display==='block'&&!el.contains(e.target)&&!e.target.classList.contains('sw-add')&&!e.target.classList.contains('sw'))cpX();});
+
+// DMC
+function updDMC(){
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+  var el=document.getElementById('dlist');
+  if(!sorted.length){el.innerHTML='<div style="color:#8a847c;font-size:11px">Convert an image first</div>';return;}
+  el.innerHTML=sorted.map(function(x){var dmc=nDMC(x.h);return '<div class="di"><div class="dd" style="background:'+x.h+'"></div><div><div class="dn">DMC '+dmc.num+'</div><div class="dna">'+dmc.name+'</div></div><div class="dc">'+x.n+'</div></div>';}).join('');
+}
+
+// EXPORT FLOSS PNG
+function xFlossPNG(){
+  if(!palette.length)return alert('Convert an image first');
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+  var total=sorted.reduce(function(s,x){return s+x.n;},0);
+  var rH=28,hH=65,W=600,H=hH+sorted.length*rH+20;
+  var ec=document.createElement('canvas');ec.width=W;ec.height=H;
+  var ex=ec.getContext('2d');
+  ex.fillStyle='#fff';ex.fillRect(0,0,W,H);
+  ex.fillStyle='#2d6a4f';ex.fillRect(0,0,W,hH);
+  ex.fillStyle='#fff';ex.font='bold 18px serif';ex.textAlign='left';ex.fillText('Floss List for Crosses',16,32);
+  ex.font='11px sans-serif';ex.fillStyle='#a8d5bf';ex.fillText('Use 2 strands of thread for cross stitch',16,50);
+  var xs=[16,40,82,190,390,480];
+  ex.fillStyle='#f0f0f0';ex.fillRect(0,hH,W,rH);
+  ex.font='bold 10px sans-serif';ex.fillStyle='#555';
+  ['N','Sym','DMC','Name','Stitches','%'].forEach(function(h,i){ex.fillText(h,xs[i],hH+17);});
+  sorted.forEach(function(x,idx){
+    var y=hH+rH*(idx+1);var dmc=nDMC(x.h);
+    if(idx%2===0){ex.fillStyle='#f9f9f9';ex.fillRect(0,y,W,rH);}
+    ex.fillStyle='#333';ex.font='10px sans-serif';ex.textAlign='left';ex.fillText(idx+1,xs[0],y+17);
+    ex.fillStyle=x.h;ex.fillRect(xs[1],y+6,13,13);ex.strokeStyle='#ccc';ex.lineWidth=.5;ex.strokeRect(xs[1],y+6,13,13);
+    ex.fillStyle='#333';ex.font='bold 9px monospace';ex.textAlign='center';ex.fillText(SYM[x.i%SYM.length],xs[1]+6,y+17);
+    ex.font='10px sans-serif';ex.textAlign='left';ex.fillText('DMC '+dmc.num,xs[2],y+17);
+    ex.fillStyle='#555';ex.fillText(dmc.name.substring(0,26),xs[3],y+17);
+    ex.fillStyle='#333';ex.textAlign='right';ex.fillText(x.n.toLocaleString(),xs[4]+50,y+17);
+    ex.fillStyle='#888';ex.fillText((x.n/total*100).toFixed(1)+'%',xs[5]+40,y+17);
+    ex.textAlign='left';ex.strokeStyle='#eee';ex.lineWidth=.3;ex.beginPath();ex.moveTo(0,y+rH);ex.lineTo(W,y+rH);ex.stroke();
+  });
+  var a=document.createElement('a');a.download='floss-list.png';a.href=ec.toDataURL();a.click();
+}
+
+// EXPORT FLOSS CSV
+function xFlossCSV(){
+  if(!palette.length)return alert('Convert an image first');
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+  var csv='N,Symbol,DMC,Name,Stitches,Hex\n';
+  sorted.forEach(function(x,idx){var dmc=nDMC(x.h);csv+=idx+1+','+SYM[x.i%SYM.length]+',DMC '+dmc.num+','+dmc.name+','+x.n+','+x.h+'\n';});
+  var a=document.createElement('a');a.download='floss-list.csv';a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.click();
+}
+
+// DESCRIPTION
+function genDesc(){
+  var nc=palette.filter(function(_,i){for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]===i)return true;return false;}).length;
+  var ct=parseInt(document.getElementById('fab').value);
+  var fn=document.getElementById('fab').options[document.getElementById('fab').selectedIndex].text;
+  var wI=(COLS/ct).toFixed(2),hI=(ROWS/ct).toFixed(2);
+  var wC=(COLS/ct*2.54).toFixed(2),hC=(ROWS/ct*2.54).toFixed(2);
+  var hoop=Math.ceil(Math.max(COLS,ROWS)/ct+2);
+  var desc='All patterns contain a maximum of 20-25 colors.\nPaper size: A4 (210 x 297 mm, 8.3 x 11.7 inches)\n\nPURCHASE DETAILS\n- PDF Pattern in Color x 3 Grid Sizes\n- PDF Pattern in Black and White x 3 Grid Sizes\n- PDF Floss length\n- PDF for Pattern Keeper\n\nPATTERN SIZE\nDMC colors: '+nc+'\nFabric: '+fn+'\nStitches: '+COLS+' x '+ROWS+'\nSize: '+wI+' x '+hI+' inches ('+wC+' x '+hC+' cm)\nHoop size: '+hoop+' inches';
+  var el=document.getElementById('dbox');el.textContent=desc;el.style.color='#1a1714';
+}
+function copyDesc(){
+  var t=document.getElementById('dbox').textContent;
+  if(!t||t.includes('Click Generate'))return;
+  navigator.clipboard.writeText(t).then(function(){
+    var b=document.getElementById('cbtn');b.textContent='Copied!';b.classList.add('pr');
+    setTimeout(function(){b.textContent='Copy';b.classList.remove('pr');},2000);
+  });
+}
+
+// EXPORT PNG
+function xPNG(){
+  var sz=CELL,W=COLS*sz,H=ROWS*sz;
+  var ec=document.createElement('canvas');ec.width=W;ec.height=H;
+  var ex=ec.getContext('2d');ex.fillStyle='#f0ece3';ex.fillRect(0,0,W,H);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){var ci=grid[r][c];if(ci>=0&&ci<palette.length){ex.fillStyle=palette[ci];ex.fillRect(c*sz,r*sz,sz,sz);}}
+  var a=document.createElement('a');a.download='cross-stitch.png';a.href=ec.toDataURL();a.click();
+}
+
+// EXPORT CHART
+function xChart(){
+  var sz=14,W=COLS*sz+50,H=ROWS*sz+60;
+  var ec=document.createElement('canvas');ec.width=W;ec.height=H;
+  var ex=ec.getContext('2d');ex.fillStyle='#fff';ex.fillRect(0,0,W,H);
+  ex.font='bold 12px serif';ex.fillStyle='#333';ex.fillText('Cross Stitch Pattern - '+COLS+'x'+ROWS,10,16);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
+    var ci=grid[r][c];var px=25+c*sz,py=28+r*sz;
+    if(ci>=0&&ci<palette.length){
+      ex.fillStyle=palette[ci];ex.fillRect(px,py,sz,sz);
+      var rgb=h2r(palette[ci]);var lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
+      ex.fillStyle=lum>140?'#000':'#fff';ex.font=(sz-3)+'px monospace';ex.textAlign='center';ex.textBaseline='middle';
+      ex.fillText(SYM[ci%SYM.length],px+sz/2,py+sz/2);
+    }
+    ex.strokeStyle='rgba(0,0,0,.1)';ex.lineWidth=.4;ex.strokeRect(px,py,sz,sz);
+  }
+  var a=document.createElement('a');a.download='cross-stitch-chart.png';a.href=ec.toDataURL();a.click();
+}
+
+// REFERENCE IMAGE
+var dref=document.getElementById('dref');
+document.getElementById('rfile').onchange=function(e){loadRef(e.target.files[0]);};
+dref.addEventListener('dragover',function(e){e.preventDefault();dref.style.borderColor='#2d6a4f';});
+dref.addEventListener('dragleave',function(){dref.style.borderColor='';});
+dref.addEventListener('drop',function(e){e.preventDefault();dref.style.borderColor='';loadRef(e.dataTransfer.files[0]);});
+function loadRef(f){
+  if(!f||!f.type.startsWith('image/'))return;
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    refSrc=new Image();
+    refSrc.onload=function(){
+      document.getElementById('rimg').src=ev.target.result;
+      document.getElementById('rimg').style.display='block';
+      document.getElementById('rbtns').style.display='block';
+      cvtRef();
+    };
+    refSrc.src=ev.target.result;
+  };
+  rd.readAsDataURL(f);
+}
+function cvtRef(){
+  if(!refSrc)return;
+  var nc=parseInt(document.getElementById('nc').value);
+  var bgt=parseInt(document.getElementById('bg').value);
+  var tmp=document.createElement('canvas');tmp.width=COLS;tmp.height=ROWS;
+  var tx=tmp.getContext('2d');tx.drawImage(refSrc,0,0,COLS,ROWS);
+  var pix=tx.getImageData(0,0,COLS,ROWS).data;
+  var pg=[],fg=[];
+  for(var i=0;i<ROWS;i++){pg.push([]);for(var j=0;j<COLS;j++){var idx=(i*COLS+j)*4;var rgb=[pix[idx],pix[idx+1],pix[idx+2]];pg[i].push(rgb);var ib=bgt>0&&rgb[0]>=bgt&&rgb[1]>=bgt&&rgb[2]>=bgt;if(!ib)fg.push(rgb);}}
+  var src=fg.length>=nc*5?fg:pg.flat();
+  var useT=fg.length>=nc*5?bgt:0;
+  var ctrs=medCut(src,nc);
+  palette=ctrs.map(function(c){return r2h(Math.round(c[0]),Math.round(c[1]),Math.round(c[2]));});
+  pushH('Convert Image');
+  grid=pg.map(function(row){return row.map(function(px){var ib=useT>0&&px[0]>=useT&&px[1]>=useT&&px[2]>=useT;if(ib)return -1;return nHex(px,palette);});});
+  SI=0;updPal();updSt();szCanvas();VX=0;VY=0;fitZoom();
+}
+
+// MEDIAN CUT
+function medCut(pixels,k){
+  function avg(pts){if(!pts.length)return[128,128,128];var s=[0,0,0];for(var i=0;i<pts.length;i++){s[0]+=pts[i][0];s[1]+=pts[i][1];s[2]+=pts[i][2];}return[s[0]/pts.length,s[1]/pts.length,s[2]/pts.length];}
+  function cut(pts,d){
+    if(d===0||pts.length===0)return[avg(pts)];
+    var mn=[255,255,255],mx=[0,0,0];
+    for(var i=0;i<pts.length;i++){for(var j=0;j<3;j++){if(pts[i][j]<mn[j])mn[j]=pts[i][j];if(pts[i][j]>mx[j])mx[j]=pts[i][j];}}
+    var rng=[mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2]];
+    var ch=rng[0]>=rng[1]&&rng[0]>=rng[2]?0:rng[1]>=rng[2]?1:2;
+    var s=pts.slice().sort(function(a,b){return a[ch]-b[ch];});
+    var mid=Math.floor(s.length/2);
+    return cut(s.slice(0,mid),d-1).concat(cut(s.slice(mid),d-1));
+  }
+  var samp=pixels.length>4000?pixels.filter(function(_,i){return i%Math.floor(pixels.length/4000)===0;}):pixels;
+  var dep=Math.ceil(Math.log2(Math.max(k,2)));
+  var ctrs=cut(samp.slice(),dep);
+  while(ctrs.length>k){
+    var md=1e9,mi=0,mj=1;
+    for(var i=0;i<ctrs.length;i++)for(var j=i+1;j<ctrs.length;j++){var dd=Math.pow(ctrs[i][0]-ctrs[j][0],2)+Math.pow(ctrs[i][1]-ctrs[j][1],2)+Math.pow(ctrs[i][2]-ctrs[j][2],2);if(dd<md){md=dd;mi=i;mj=j;}}
+    var mg=[(ctrs[mi][0]+ctrs[mj][0])/2,(ctrs[mi][1]+ctrs[mj][1])/2,(ctrs[mi][2]+ctrs[mj][2])/2];
+    var nc2=[];for(var i=0;i<ctrs.length;i++)if(i!==mi&&i!==mj)nc2.push(ctrs[i]);nc2.push(mg);ctrs=nc2;
+  }
+  for(var it=0;it<15;it++){
+    var sm=Array.from({length:ctrs.length},function(){return[0,0,0,0];});
+    for(var i=0;i<samp.length;i++){var ci=nRgb(samp[i],ctrs);sm[ci][0]+=samp[i][0];sm[ci][1]+=samp[i][1];sm[ci][2]+=samp[i][2];sm[ci][3]++;}
+    ctrs=sm.map(function(s,i){return s[3]?[s[0]/s[3],s[1]/s[3],s[2]/s[3]]:ctrs[i];});
+  }
+  return ctrs;
+}
+
+// STATUS
+function updSt(){
+  document.getElementById('sts').textContent=COLS+' x '+ROWS;
+  document.getElementById('stc').textContent=(COLS*ROWS).toLocaleString();
+  var ct=parseInt(document.getElementById('fab').value);
+  document.getElementById('fcm').textContent=(COLS/ct*2.54).toFixed(1)+' x '+(ROWS/ct*2.54).toFixed(1)+' cm';
+}
+function onSz(){var v=parseInt(document.getElementById('sz').value);COLS=v;ROWS=v;document.getElementById('szv').textContent=v+' x '+v;grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});VX=0;VY=0;szCanvas();updSt();fitZoom();}
+function onNc(){document.getElementById('ncv').textContent=document.getElementById('nc').value;if(refSrc)cvtRef();}
+function onBg(){document.getElementById('bgv').textContent=document.getElementById('bg').value;if(refSrc)cvtRef();}
+
+window.addEventListener('resize',function(){szCanvas();render();});
+
+// BOOT - runs after DOM is ready
+grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
+szCanvas();
+updSt();
+updPal();
+fitZoom();
+</script>
+</body>
+</html>
