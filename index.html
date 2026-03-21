@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross Stitch Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;font-size:13px;color:#1a1714;background:#f7f4ef}
+#app{display:flex;height:100vh}
+#sidebar{width:230px;flex-shrink:0;background:#fff;border-right:1px solid #e2ddd6;display:flex;flex-direction:column;overflow:hidden}
+#sb-head{padding:12px 14px 10px;border-bottom:1px solid #e2ddd6;flex-shrink:0}
+#sb-head h1{font-family:'DM Serif Display',serif;font-size:17px}
+#sb-head p{font-size:10px;color:#8a847c;margin-top:1px}
+#sb-body{flex:1;overflow-y:auto;padding:8px}
+#sb-body::-webkit-scrollbar{width:3px}
+#sb-body::-webkit-scrollbar-thumb{background:#e2ddd6;border-radius:2px}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#toolbar{height:42px;background:#fff;border-bottom:1px solid #e2ddd6;display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;overflow-x:auto}
+#canvas-area{flex:1;position:relative;overflow:hidden;background:#e8e4dc}
+#gc,#ov{position:absolute;top:0;left:0;image-rendering:pixelated}
+#ov{pointer-events:none}
+#statusbar{height:24px;background:#fff;border-top:1px solid #e2ddd6;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;font-size:11px;color:#8a847c}
+#statusbar b{color:#1a1714;font-weight:500}
+.sec{margin-bottom:8px}
+.sec-t{font-size:10px;font-weight:500;color:#8a847c;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.sec-b{background:#f7f4ef;border-radius:7px;padding:8px;border:1px solid #e2ddd6}
+.ctrl{margin-bottom:6px}.ctrl:last-child{margin-bottom:0}
+.cl{display:flex;justify-content:space-between;margin-bottom:2px;font-size:12px}
+.cl span:first-child{color:#8a847c}.cv{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:#e2ddd6;border-radius:2px;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#2d6a4f;border:2px solid #fff;box-shadow:0 0 0 1px #2d6a4f}
+select{width:100%;padding:5px 7px;border:1px solid #e2ddd6;border-radius:6px;background:#fff;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
+.cb-row{display:flex;align-items:center;gap:5px;font-size:12px;margin-top:4px}
+input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
+.pg{display:flex;flex-wrap:wrap;gap:3px;max-height:110px;overflow-y:auto}
+.sw{width:22px;height:22px;border-radius:3px;cursor:pointer;border:2px solid transparent;flex-shrink:0}
+.sw.sel{border-color:#2d6a4f;box-shadow:0 0 0 1px #2d6a4f}
+.sw-add{width:22px;height:22px;border-radius:3px;cursor:pointer;border:1.5px dashed #e2ddd6;display:flex;align-items:center;justify-content:center;color:#8a847c;font-size:14px}
+.sw-add:hover{border-color:#2d6a4f;color:#2d6a4f}
+.btn{padding:5px 10px;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid #e2ddd6;border-radius:6px;background:#fff;cursor:pointer;color:#1a1714;white-space:nowrap}
+.btn:hover{background:#f7f4ef}
+.btn.pr{background:#2d6a4f;color:#fff;border-color:#2d6a4f}
+.btn.dr{color:#c0392b;border-color:#c0392b}
+.btn-r{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.tb-btn{padding:5px 10px;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid #e2ddd6;border-radius:6px;background:#fff;cursor:pointer;color:#8a847c;white-space:nowrap;flex-shrink:0}
+.tb-btn:hover{background:#f7f4ef;color:#1a1714}
+.tb-btn.act{background:#2d6a4f;color:#fff;border-color:#2d6a4f}
+.zi{font-size:11px;color:#8a847c;min-width:36px;text-align:center;flex-shrink:0}
+#dref{border:1.5px dashed #e2ddd6;border-radius:7px;padding:10px;text-align:center;cursor:pointer;color:#8a847c;font-size:11px;line-height:1.5}
+#dref:hover{border-color:#2d6a4f;color:#2d6a4f}
+#rimg{max-width:100%;border-radius:5px;margin-top:5px;display:none;border:1px solid #e2ddd6}
+.di{display:flex;align-items:center;gap:5px;padding:2px 0;border-bottom:1px solid #f0ede8;font-size:11px}
+.dd{width:14px;height:14px;border-radius:2px;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+.dn{font-weight:500;color:#1a1714}
+.dna{color:#8a847c;font-size:10px}
+.dc{color:#8a847c;font-size:10px;margin-left:auto;flex-shrink:0}
+#dlist{max-height:160px;overflow-y:auto;margin-top:4px}
+#dbox{font-size:11px;line-height:1.6;white-space:pre-wrap;background:#fff;border:1px solid #e2ddd6;border-radius:6px;padding:8px;max-height:140px;overflow-y:auto;font-family:monospace;color:#8a847c}
+#cpick{display:none;position:fixed;z-index:999;background:#fff;border:1px solid #e2ddd6;border-radius:9px;padding:11px;box-shadow:0 6px 20px rgba(0,0,0,.12);width:190px}
+#cpick input[type=color]{width:100%;height:34px;border:none;border-radius:5px;cursor:pointer;padding:0}
+#cpick input[type=text]{width:100%;margin-top:5px;padding:4px 7px;border:1px solid #e2ddd6;border-radius:5px;font-size:12px;font-family:monospace}
+.fb{display:inline-block;background:#f0f7f4;color:#2d6a4f;border:1px solid #74c69d;border-radius:3px;padding:1px 6px;font-size:10px;margin-top:3px}
+#hl{max-height:60px;overflow-y:auto;font-size:11px;color:#8a847c}
+#hl div{padding:1px 0;border-bottom:1px solid #f0ede8}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="sidebar">
+<div id="sb-head"><h1>Cross Stitch</h1><p>Studio</p></div>
+<div id="sb-body">
+
+<div class="sec"><div class="sec-t">Stitch Size</div><div class="sec-b">
+<div class="ctrl"><div class="cl"><span>W x H</span><span class="cv" id="szv">40 x 40</span></div>
+<input type="range" id="sz" min="10" max="200" value="40" step="5" oninput="onSz()"></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Max Colors</div><div class="sec-b">
+<div class="ctrl"><div class="cl"><span>Colors</span><span class="cv" id="ncv">16</span></div>
+<input type="range" id="nc" min="2" max="32" value="16" step="1" oninput="onNc()"></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Background</div><div class="sec-b">
+<div class="ctrl"><div class="cl"><span>Remove light bg</span><span class="cv" id="bgv">220</span></div>
+<input type="range" id="bg" min="0" max="255" value="220" step="5" oninput="onBg()"></div>
+<div style="font-size:10px;color:#8a847c">0=keep all | 255=remove all light</div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Fabric</div><div class="sec-b">
+<select id="fab" onchange="updSt()">
+<option value="11">Aida 11 ct</option><option value="14" selected>Aida 14 ct</option>
+<option value="16">Aida 16 ct</option><option value="18">Aida 18 ct</option>
+<option value="28">Evenweave 28 ct</option><option value="32">Evenweave 32 ct</option>
+</select>
+<div class="fb" id="fcm">-- x -- cm</div>
+<div class="cb-row"><input type="checkbox" id="sgr" checked onchange="render()"><label for="sgr">Show Grid</label></div>
+<div class="cb-row"><input type="checkbox" id="ssy" checked onchange="render()"><label for="ssy">Show Symbols</label></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Palette <span id="pcnt" style="float:right;color:#1a1714;font-weight:500">0</span></div><div class="sec-b">
+<div class="pg" id="pgrid"></div>
+<div class="btn-r"><button class="btn" onclick="addCol()">+ Add color</button><button class="btn dr" onclick="clearUnused()">Remove unused</button></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">DMC Thread List</div><div class="sec-b">
+<div id="dlist"><div style="color:#8a847c;font-size:11px">Convert an image first</div></div>
+<div class="btn-r"><button class="btn pr" onclick="xFlossPNG()">Export Floss PNG</button><button class="btn" onclick="xFlossCSV()">Export CSV</button></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Product Description</div><div class="sec-b">
+<div id="dbox">Click Generate to create Etsy description</div>
+<div class="btn-r"><button class="btn pr" onclick="genDesc()">Generate</button><button class="btn" id="cbtn" onclick="copyDesc()">Copy</button></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Actions</div><div class="sec-b">
+<div class="btn-r"><button class="btn" onclick="undo()">Undo</button><button class="btn dr" onclick="clearCanvas()">Clear</button></div>
+<div style="margin-top:5px"><button class="btn pr" style="width:100%;margin-bottom:4px" onclick="xPNG()">Export PNG</button></div>
+<button class="btn" style="width:100%" onclick="xChart()">Export Chart</button>
+<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2ddd6">
+<div style="font-size:10px;font-weight:500;color:#8a847c;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Mockup Prompt</div>
+<button class="btn pr" style="width:100%;margin-bottom:4px" onclick="genMockupPrompt()">Generate AI Prompt</button>
+<div id="mockup-box" style="display:none;margin-top:6px">
+<div id="mockup-text" style="font-size:10px;line-height:1.5;white-space:pre-wrap;background:#fff;border:1px solid #e2ddd6;border-radius:6px;padding:8px;max-height:120px;overflow-y:auto;font-family:monospace;color:#1a1714"></div>
+<div style="display:flex;gap:4px;margin-top:5px">
+<button class="btn sm" onclick="copyMockup()" id="mockup-copy-btn" style="flex:1">Copy</button>
+<button class="btn sm" onclick="openMidjourney()" style="flex:1">Midjourney</button>
+<button class="btn sm" onclick="openGemini()" style="flex:1">Gemini</button>
+</div>
+</div>
+</div>
+<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2ddd6">
+<div style="font-size:10px;font-weight:500;color:#8a847c;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Export PDF</div>
+<button class="btn pr" style="width:100%;margin-bottom:4px" onclick="xPDF('color','S')">Color S (1 page A4)</button>
+<button class="btn pr" style="width:100%;margin-bottom:4px" onclick="xPDF('color','M')">Color M (2 pages A4)</button>
+<button class="btn pr" style="width:100%;margin-bottom:4px" onclick="xPDF('color','L')">Color L (4 pages A4)</button>
+<button class="btn" style="width:100%;margin-bottom:4px" onclick="xPDF('bw','S')">B&amp;W S (1 page A4)</button>
+<button class="btn" style="width:100%;margin-bottom:4px" onclick="xPDF('bw','M')">B&amp;W M (2 pages A4)</button>
+<button class="btn" style="width:100%;margin-bottom:4px" onclick="xPDF('bw','L')">B&amp;W L (4 pages A4)</button>
+<button class="btn" style="width:100%;margin-bottom:4px" onclick="xFlossLengthPDF()">PDF Floss Length</button>
+<button class="btn" style="width:100%" onclick="xPatternKeeper()">PDF for Pattern Keeper</button>
+</div>
+</div></div>
+
+<div class="sec"><div class="sec-t">Reference Image</div><div class="sec-b">
+<div id="dref" onclick="document.getElementById('rfile').click()">
+<div style="font-size:16px;margin-bottom:2px">[img]</div>
+<div>Drag & drop or click to select</div>
+<div style="font-size:10px">Auto-converts to pattern</div>
+</div>
+<img id="rimg">
+<input type="file" id="rfile" accept="image/*" style="display:none">
+<div id="rbtns" style="display:none;margin-top:5px"><button class="btn pr" style="width:100%" onclick="cvtRef()">Re-convert</button></div>
+</div></div>
+
+<div class="sec"><div class="sec-t">History</div><div class="sec-b"><div id="hl"><div>No history yet</div></div></div></div>
+
+</div></div>
+
+<div id="main">
+<div id="toolbar">
+<button class="tb-btn act" id="t-move" onclick="setTool('move',this)">Move</button>
+<button class="tb-btn" id="t-paint" onclick="setTool('paint',this)">Paint</button>
+<button class="tb-btn" id="t-erase" onclick="setTool('erase',this)">Erase</button>
+<button class="tb-btn" id="t-fill" onclick="setTool('fill',this)">Fill</button>
+<button class="tb-btn" id="t-pick" onclick="setTool('pick',this)">Pick</button>
+<button class="tb-btn" id="t-line" onclick="setTool('line',this)">Line</button>
+<button class="tb-btn" id="t-select" onclick="setTool('select',this)">Select</button>
+<div style="width:1px;height:18px;background:#e2ddd6;margin:0 2px;flex-shrink:0"></div>
+<button class="tb-btn" onclick="doZoom(1.25)">+</button>
+<div class="zi" id="zpct">100%</div>
+<button class="tb-btn" onclick="doZoom(0.8)">-</button>
+<button class="tb-btn" onclick="fitZoom()">Reset</button>
+</div>
+<div id="canvas-area"><canvas id="gc"></canvas><canvas id="ov"></canvas></div>
+<div id="statusbar">
+<span>Tool: <b id="stl">Move</b></span>
+<span>Pos: <b id="stp">--</b></span>
+<span>Size: <b id="sts">-- x --</b></span>
+<span>Stitches: <b id="stc">--</b></span>
+<span style="margin-left:auto">Color: <span id="stcol" style="display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:middle;border:1px solid #ccc;margin-right:2px"></span><b id="sthex">--</b></span>
+</div>
+</div>
+</div>
+
+<div id="cpick">
+<div style="font-size:11px;color:#8a847c;margin-bottom:5px">Pick color</div>
+<input type="color" id="cpc" oninput="cpChg()">
+<input type="text" id="cph" placeholder="#ffffff" onchange="cpHex()" maxlength="7">
+<div class="btn-r" style="margin-top:7px">
+<button class="btn pr" onclick="cpOK()" style="flex:1">OK</button>
+<button class="btn" onclick="cpX()" style="flex:1">Cancel</button>
+</div>
+</div>
+
+<script>
+// SYMBOLS
+var SYM=[
+  // Shapes drawn with ASCII - all render perfectly in jsPDF
+  'o','O','*','@','#','%','+','=','-','|',
+  '/','\\','<','>','(',')','^','~','[',']',
+  '&','$','!','?','8','0','T','Y','X','Z',
+  'S','L','7','3','V','W','N','M','H','K'
+];
+
+// DMC DATABASE (abbreviated - key colors)
+var DMC=[
+["blanc","White",255,255,255],[310,"Black",0,0,0],[321,"Red",196,40,54],
+[400,"Mahogany-DK",139,69,19],[402,"Mahogany-LT",255,178,122],[413,"Pewter-DK",84,84,84],
+[414,"Steel Gray",169,169,169],[415,"Pearl Gray",210,210,210],[433,"Brown-MED",138,90,50],
+[434,"Brown-LT",165,115,70],[435,"Brown-VY LT",188,142,100],[436,"Tan",205,165,115],
+[437,"Tan-LT",222,190,145],[469,"Avocado Green",100,130,60],[470,"Avocado-LT",130,165,80],
+[500,"Blue Green-VY DK",30,80,60],[501,"Blue Green-DK",50,110,85],[502,"Blue Green",80,140,110],
+[503,"Blue Green-MED",110,170,140],[519,"Sky Blue",140,190,220],[520,"Fern Green-DK",80,100,60],
+[522,"Fern Green",130,150,100],[523,"Fern Green-LT",160,175,130],[524,"Fern Green-VY LT",185,200,160],
+[535,"Ash Gray-VY LT",90,90,90],[543,"Beige Brown-ULT VY LT",225,210,190],
+[550,"Violet-VY DK",90,30,100],[552,"Violet-MED",130,60,140],[553,"Violet",165,100,175],
+[554,"Violet-LT",210,165,215],[561,"Jade-VY DK",40,110,80],[562,"Jade-MED",70,150,110],
+[563,"Jade-LT",115,185,150],[597,"Turquoise",70,175,185],[598,"Turquoise-LT",130,205,210],
+[600,"Cranberry-VY DK",185,30,80],[601,"Cranberry-DK",205,50,100],[602,"Cranberry-MED",220,80,120],
+[603,"Cranberry",235,120,155],[604,"Cranberry-LT",245,170,190],[606,"Orange Red-BRT",230,50,20],
+[608,"Orange-BRT",240,100,30],[610,"Drab Brown-DK",130,105,70],[611,"Drab Brown",155,130,90],
+[612,"Drab Brown-LT",185,165,130],[632,"Desert Sand-ULT DK",140,85,55],[640,"Beige Gray-VY DK",130,120,100],
+[642,"Beige Gray-DK",165,155,135],[644,"Beige Gray-MED",200,195,180],[645,"Beaver Gray-VY DK",100,95,90],
+[646,"Beaver Gray-DK",130,125,120],[647,"Beaver Gray-MED",165,160,155],[648,"Beaver Gray-LT",200,195,190],
+[666,"Red-BRT",215,30,45],[676,"Old Gold-LT",220,195,130],[677,"Old Gold-VY LT",235,220,175],
+[680,"Old Gold-DK",185,150,60],[699,"Green",20,120,40],[700,"Green-BRT",30,140,50],
+[701,"Green-LT",60,165,75],[702,"Kelly Green",80,185,95],[703,"Chartreuse",110,200,110],
+[712,"Cream",250,240,220],[718,"Plum",155,40,110],[720,"Orange Spice-DK",210,95,30],
+[721,"Orange Spice-MED",225,125,55],[722,"Orange Spice-LT",240,165,100],[725,"Topaz-MED LT",250,200,60],
+[726,"Topaz-LT",250,215,100],[727,"Topaz-VY LT",255,235,170],[729,"Old Gold-MED",200,165,70],
+[738,"Tan-VY LT",230,200,155],[739,"Tan-ULT VY LT",245,225,195],[740,"Tangerine",250,140,20],
+[741,"Tangerine-MED",250,165,50],[742,"Tangerine-LT",250,195,95],[743,"Yellow-MED",250,220,120],
+[744,"Yellow-PALE",250,235,165],[746,"Off White",255,250,230],[747,"Sky Blue-VY LT",220,245,250],
+[754,"Peach-LT",245,195,165],[758,"Terra Cotta-VY LT",235,175,150],[760,"Salmon",235,155,140],
+[761,"Salmon-LT",245,185,175],[762,"Pearl Gray-VY LT",235,235,235],[772,"Yellow Green-VY LT",215,230,190],
+[775,"Baby Blue-VY LT",210,235,245],[776,"Pink-MED",245,170,175],[780,"Topaz-ULT VY DK",155,110,30],
+[781,"Topaz-VY DK",175,130,45],[782,"Topaz-DK",195,150,55],[783,"Topaz-MED",215,175,80],
+[791,"Cornflower Blue-VY DK",65,75,135],[792,"Cornflower Blue-DK",85,100,165],
+[793,"Cornflower Blue-MED",115,130,190],[794,"Cornflower Blue-LT",155,170,215],
+[796,"Royal Blue-DK",30,70,150],[797,"Royal Blue",40,90,175],[798,"Delft Blue-DK",70,115,185],
+[799,"Delft Blue-MED",105,145,205],[800,"Delft Blue-PALE",175,200,225],[801,"Coffee Brown-DK",110,65,35],
+[806,"Peacock Blue-DK",45,150,175],[807,"Peacock Blue",75,175,200],[813,"Blue-LT",155,190,220],
+[814,"Garnet-DK",140,20,40],[815,"Garnet-MED",165,30,55],[816,"Garnet",185,40,65],
+[817,"Coral Red-VY DK",195,50,50],[818,"Baby Pink",255,205,200],[819,"Baby Pink-LT",255,225,220],
+[822,"Beige Gray-LT",220,215,195],[823,"Navy Blue-DK",30,40,105],[824,"Blue-VY DK",45,95,150],
+[825,"Blue-DK",60,120,175],[826,"Blue-MED",85,145,195],[827,"Blue-VY LT",175,210,235],
+[838,"Beige Brown-VY DK",95,70,45],[839,"Beige Brown-DK",120,90,60],[840,"Beige Brown-MED",150,115,80],
+[841,"Beige Brown-LT",185,155,120],[842,"Beige Brown-VY LT",215,190,160],[869,"Hazel Nut Brown-VY DK",130,90,45],
+[890,"Pistachio Green-ULT DK",30,80,35],[891,"Carnation-DK",240,90,110],[892,"Carnation-MED",245,120,135],
+[893,"Carnation-LT",250,155,165],[894,"Carnation-VY LT",255,190,195],[895,"Hunter Green-VY DK",30,90,40],
+[898,"Coffee Brown-VY DK",90,50,25],[899,"Rose-MED",240,130,145],[900,"Burnt Orange-DK",200,70,20],
+[902,"Garnet-VY DK",120,25,45],[904,"Parrot Green-VY DK",70,135,50],[905,"Parrot Green-DK",90,165,65],
+[906,"Parrot Green-MED",120,195,90],[907,"Parrot Green-LT",160,220,120],[909,"Emerald Green-VY DK",25,130,60],
+[910,"Emerald Green-DK",35,155,75],[911,"Emerald Green-MED",50,175,90],[912,"Emerald Green-LT",70,200,110],
+[913,"Nile Green-MED",120,200,150],[918,"Red Copper-DK",155,65,35],[919,"Red Copper",185,85,45],
+[920,"Copper-MED",200,105,60],[921,"Copper",215,125,75],[922,"Copper-LT",230,150,100],
+[924,"Gray Green-VY DK",75,105,95],[926,"Gray Green-MED",130,160,150],[927,"Gray Green-LT",170,195,185],
+[928,"Gray Green-VY LT",205,220,215],[930,"Antique Blue-DK",80,105,130],[931,"Antique Blue-MED",110,140,165],
+[932,"Antique Blue-LT",155,180,200],[937,"Avocado Green-MED",95,125,60],[938,"Coffee Brown-ULT DK",70,40,20],
+[943,"Aquamarine-MED",50,185,160],[945,"Tawny",245,190,155],[946,"Burnt Orange-MED",220,95,25],
+[947,"Burnt Orange",235,120,40],[948,"Peach-VY LT",255,225,210],[950,"Desert Sand-LT",225,185,155],
+[951,"Tawny-LT",250,215,185],[954,"Nile Green",110,195,140],[955,"Nile Green-LT",155,220,175],
+[956,"Geranium",245,120,115],[958,"Sea Green-DK",50,185,165],[959,"Sea Green-MED",80,200,185],
+[961,"Dusty Rose-DK",210,110,120],[962,"Dusty Rose-MED",230,145,150],[963,"Dusty Rose-ULT VY LT",255,210,210],
+[966,"Baby Green-MED",170,215,175],[970,"Pumpkin-LT",240,135,45],[971,"Pumpkin",240,120,20],
+[972,"Canary-DEEP",250,175,20],[975,"Golden Brown-DK",150,95,30],[976,"Golden Brown-MED",200,145,70],
+[977,"Golden Brown-LT",225,175,105],[986,"Forest Green-VY DK",50,90,40],[987,"Forest Green-DK",70,120,55],
+[988,"Forest Green-MED",95,150,75],[989,"Forest Green",120,175,100],[991,"Aquamarine-DK",50,135,115],
+[992,"Aquamarine-MED",75,170,150],[993,"Aquamarine-LT",115,195,175],[995,"Electric Blue-DK",30,145,210],
+[3011,"Khaki Green-DK",130,140,80],[3012,"Khaki Green-MED",155,165,100],[3013,"Khaki Green-LT",185,195,140],
+[3021,"Brown Gray-VY DK",75,70,55],[3031,"Mocha Brown-VY DK",80,60,40],[3032,"Mocha Brown-MED",175,155,130],
+[3033,"Mocha Brown-VY LT",215,200,180],[3041,"Antique Violet-MED",160,130,155],[3042,"Antique Violet-LT",195,170,190],
+[3045,"Yellow Beige-DK",195,165,105],[3046,"Yellow Beige-MED",215,190,140],[3047,"Yellow Beige-LT",235,220,185],
+[3051,"Green Gray-DK",90,105,70],[3052,"Green Gray-MED",130,150,105],[3053,"Green Gray",160,175,135],
+[3325,"Baby Blue-LT",175,205,230],[3326,"Rose-LT",250,175,185],[3328,"Salmon-DK",220,120,110],
+[3340,"Apricot-MED",250,150,100],[3341,"Apricot",250,180,140],[3345,"Hunter Green-DK",40,105,45],
+[3346,"Hunter Green",60,130,60],[3347,"Yellow Green-MED",95,160,90],[3348,"Yellow Green-LT",175,210,155],
+[3350,"Dusty Rose-ULT DK",190,75,100],[3354,"Dusty Rose-LT",235,175,180],[3362,"Pine Green-DK",80,110,65],
+[3363,"Pine Green-MED",105,140,85],[3364,"Pine Green",140,170,115],[3371,"Black Brown",35,20,10],
+[3685,"Mauve-VY DK",145,40,70],[3687,"Mauve",200,115,130],[3688,"Mauve-MED",225,165,175],
+[3689,"Mauve-LT",245,195,200],[3705,"Melon-DK",250,120,110],[3712,"Salmon-MED",235,140,125],
+[3721,"Shell Pink-DK",185,95,95],[3731,"Dusty Rose-VY DK",210,100,115],[3733,"Dusty Rose",235,145,155],
+[3746,"Blue Violet-DK",110,100,175],[3747,"Blue Violet-VY LT",200,205,235],[3750,"Antique Blue-VY DK",50,75,105],
+[3752,"Antique Blue-VY LT",185,200,220],[3755,"Baby Blue",120,165,205],[3760,"Wedgewood-MED",60,125,170],
+[3761,"Sky Blue-LT",145,195,225],[3765,"Peacock Blue-VY DK",35,130,155],[3768,"Gray Green-DK",95,125,120],
+[3776,"Mahogany-LT",200,130,75],[3777,"Terra Cotta-VY DK",165,70,55],[3778,"Terra Cotta-LT",210,145,125],
+[3781,"Mocha Brown-DK",120,95,70],[3782,"Mocha Brown-LT",200,180,155],[3799,"Pewter Gray-VY DK",65,65,65],
+[3820,"Straw-DK",220,185,90],[3821,"Straw",235,205,120],[3822,"Straw-LT",245,225,165],
+[3823,"Yellow-ULT PALE",255,250,215],[3824,"Apricot-LT",250,195,170],[3825,"Pumpkin-PALE",250,175,110],
+[3826,"Golden Brown",185,130,60],[3827,"Golden Brown-PALE",240,190,120],[3828,"Hazel Nut Brown",175,140,90],
+[3829,"Old Gold-VY DK",160,125,35],[3830,"Terra Cotta",185,90,70],[3831,"Raspberry-DK",175,40,70],
+[3832,"Raspberry-MED",205,75,100],[3833,"Raspberry-LT",225,120,140],[3834,"Grape-DK",100,55,100],
+[3835,"Grape-MED",140,90,140],[3836,"Grape-LT",180,140,185],[3837,"Lavender-ULT DK",110,65,140],
+[3838,"Lavender-DK",100,100,175],[3839,"Lavender-MED",130,130,200],[3840,"Lavender-LT",175,175,220],
+[3847,"Teal Green-DK",45,135,120],[3848,"Teal Green-MED",65,160,145],[3849,"Teal Green-LT",90,185,170],
+[3853,"Autumn Gold-DK",225,140,45],[3854,"Autumn Gold-MED",235,165,80],[3855,"Autumn Gold-LT",245,200,130],
+[3856,"Mahogany-ULT VY LT",255,215,185],[3857,"Rosewood-DK",110,40,30],[3858,"Rosewood-MED",155,75,60],
+[3862,"Mocha Beige-DK",145,115,80],[3863,"Mocha Beige-MED",175,145,105],[3864,"Mocha Beige-LT",210,185,155],
+[3865,"Winter White",250,248,240],[3866,"Mocha Brown-ULT VY LT",245,240,230]
+];
+
+// STATE
+var COLS=40,ROWS=40,CELL=8,ZL=1,VX=0,VY=0;
+var grid=[],palette=[],SI=0,tool='move';
+var hist=[],hlab=[];
+var painting=false,panSt=null,lineSt=null,selRect=null;
+var cpTgt=-1,refSrc=null;
+
+var gc=document.getElementById('gc');
+var ctx=gc.getContext('2d');
+var ov=document.getElementById('ov');
+var octx=ov.getContext('2d');
+var area=document.getElementById('canvas-area');
+
+// HELPERS
+function h2r(h){var m=h.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:null;}
+function r2h(r,g,b){return'#'+[r,g,b].map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');}
+function nRgb(px,pal){var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var d=Math.pow(px[0]-pal[i][0],2)+Math.pow(px[1]-pal[i][1],2)+Math.pow(px[2]-pal[i][2],2);if(d<bd){bd=d;b=i;}}return b;}
+function nHex(px,pal){var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var rgb=h2r(pal[i]);if(!rgb)continue;var d=Math.pow(px[0]-rgb[0],2)+Math.pow(px[1]-rgb[1],2)+Math.pow(px[2]-rgb[2],2);if(d<bd){bd=d;b=i;}}return b;}
+function nDMC(hex){var rgb=h2r(hex);if(!rgb)return{num:'--',name:'Unknown',hex:hex};var b=null,bd=1e9;for(var i=0;i<DMC.length;i++){var e=DMC[i];var d=Math.pow(rgb[0]-e[2],2)+Math.pow(rgb[1]-e[3],2)+Math.pow(rgb[2]-e[4],2);if(d<bd){bd=d;b={num:e[0],name:e[1],hex:r2h(e[2],e[3],e[4])};}}return b||{num:'--',name:'Unknown',hex:hex};}
+function inB(c,r){return c>=0&&c<COLS&&r>=0&&r<ROWS;}
+function getCell(e){var rc=gc.getBoundingClientRect();var ds=Math.max(0.1,CELL*ZL);return[Math.floor((e.clientX-rc.left)/ds+VX),Math.floor((e.clientY-rc.top)/ds+VY)];}
+
+// CANVAS SIZE
+function szCanvas(){
+  var w=area.clientWidth||area.offsetWidth||window.innerWidth-230||800;
+  var h=area.clientHeight||area.offsetHeight||window.innerHeight-70||600;
+  if(w<50)w=800; if(h<50)h=600;
+  gc.width=w; gc.height=h;
+  ov.width=w; ov.height=h;
+}
+
+// RENDER
+function render(){
+  var W=gc.width,H=gc.height;
+  var ds=Math.max(0.1,CELL*ZL);
+  var sg=document.getElementById('sgr').checked;
+  var ss=document.getElementById('ssy').checked;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f0ece3';ctx.fillRect(0,0,W,H);
+  for(var r=0;r<ROWS;r++){
+    for(var c=0;c<COLS;c++){
+      var px=Math.round((c-VX)*ds),py=Math.round((r-VY)*ds);
+      if(px+ds<0||py+ds<0||px>W||py>H)continue;
+      var ci=grid[r][c];
+      if(ci>=0&&ci<palette.length){
+        ctx.fillStyle=palette[ci];ctx.fillRect(px,py,ds,ds);
+        if(ss&&ds>=8){
+          var rgb=h2r(palette[ci]);
+          var lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
+          ctx.fillStyle=lum>140?'rgba(0,0,0,.6)':'rgba(255,255,255,.8)';
+          ctx.font=Math.max(6,ds-3)+'px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText(SYM[ci%SYM.length],px+ds/2,py+ds/2);
+        }
+      }
+      if(sg&&ds>=3){ctx.strokeStyle='rgba(100,100,100,.18)';ctx.lineWidth=.5;ctx.strokeRect(px,py,ds,ds);}
+    }
+  }
+  if(sg&&ds>=3){
+    ctx.strokeStyle='rgba(50,50,50,.3)';ctx.lineWidth=1;
+    for(var r2=0;r2<=ROWS;r2+=10){var py2=Math.round((r2-VY)*ds);if(py2>=0&&py2<=H){ctx.beginPath();ctx.moveTo(0,py2);ctx.lineTo(W,py2);ctx.stroke();}}
+    for(var c2=0;c2<=COLS;c2+=10){var px2=Math.round((c2-VX)*ds);if(px2>=0&&px2<=W){ctx.beginPath();ctx.moveTo(px2,0);ctx.lineTo(px2,H);ctx.stroke();}}
+  }
+  octx.clearRect(0,0,ov.width,ov.height);
+  if(selRect){
+    var ds2=Math.max(.1,CELL*ZL);
+    var spx=Math.round((selRect.x-VX)*ds2),spy=Math.round((selRect.y-VY)*ds2);
+    octx.strokeStyle='rgba(45,106,79,.9)';octx.lineWidth=1.5;octx.setLineDash([4,3]);
+    octx.strokeRect(spx,spy,selRect.w*ds2,selRect.h*ds2);octx.setLineDash([]);
+    octx.fillStyle='rgba(45,106,79,.08)';octx.fillRect(spx,spy,selRect.w*ds2,selRect.h*ds2);
+  }
+}
+
+// ZOOM
+function doZoom(f){ZL=Math.max(.05,Math.min(16,ZL*f));document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';render();}
+function fitZoom(){VX=0;VY=0;ZL=Math.min(gc.width/(COLS*CELL),gc.height/(ROWS*CELL));document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';render();}
+area.addEventListener('wheel',function(e){
+  e.preventDefault();
+  var rc=gc.getBoundingClientRect(),ds=Math.max(.1,CELL*ZL);
+  var cx=(e.clientX-rc.left)/ds+VX,cy=(e.clientY-rc.top)/ds+VY;
+  ZL=Math.max(.05,Math.min(16,ZL*(e.deltaY<0?1.15:.87)));
+  var ds2=Math.max(.1,CELL*ZL);
+  VX=Math.max(0,cx-(e.clientX-rc.left)/ds2);VY=Math.max(0,cy-(e.clientY-rc.top)/ds2);
+  document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';render();
+},{passive:false});
+
+// TOOLS
+function setTool(t,btn){
+  tool=t;
+  document.querySelectorAll('.tb-btn').forEach(function(b){b.classList.remove('act');});
+  btn.classList.add('act');
+  var cur={move:'grab',paint:'crosshair',erase:'cell',fill:'crosshair',pick:'crosshair',line:'crosshair',select:'default'};
+  area.style.cursor=cur[t]||'crosshair';
+  document.getElementById('stl').textContent=btn.textContent.trim();
+}
+function paintCell(c,r){
+  if(!inB(c,r))return false;
+  if(tool==='erase'){if(grid[r][c]===-1)return false;grid[r][c]=-1;return true;}
+  if(tool==='paint'){if(SI<0||SI>=palette.length||grid[r][c]===SI)return false;grid[r][c]=SI;return true;}
+  return false;
+}
+function flood(c,r,from,to){
+  if(from===to)return;
+  var stk=[[c,r]];
+  while(stk.length){var p=stk.pop(),cc=p[0],rr=p[1];if(!inB(cc,rr)||grid[rr][cc]!==from)continue;grid[rr][cc]=to;stk.push([cc+1,rr],[cc-1,rr],[cc,rr+1],[cc,rr-1]);}
+}
+function drawLine(x0,y0,x1,y1){
+  var dx=Math.abs(x1-x0),dy=Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,err=dx-dy;
+  while(true){if(inB(x0,y0)&&SI>=0&&SI<palette.length)grid[y0][x0]=SI;if(x0===x1&&y0===y1)break;var e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}}
+}
+
+// MOUSE
+area.addEventListener('mousedown',function(e){
+  var p=getCell(e),c=p[0],r=p[1];
+  if(tool==='move'){painting=true;area.style.cursor='grabbing';panSt={x:e.clientX,y:e.clientY,vx:VX,vy:VY};return;}
+  if(tool==='pick'){if(inB(c,r)&&grid[r][c]>=0){SI=grid[r][c];updPal();updSS();}return;}
+  if(tool==='fill'){if(!inB(c,r))return;pushH('Fill');flood(c,r,grid[r][c],SI);render();return;}
+  if(tool==='line'){lineSt=[c,r];return;}
+  if(tool==='select'){selRect={x:c,y:r,w:0,h:0};return;}
+  pushH(tool==='erase'?'Erase':'Paint');painting=true;paintCell(c,r);render();
+});
+area.addEventListener('mousemove',function(e){
+  var p=getCell(e),c=p[0],r=p[1];
+  document.getElementById('stp').textContent=inB(c,r)?(c+1)+','+(r+1):'--';
+  if(tool==='move'&&painting&&panSt){var ds=Math.max(.1,CELL*ZL);VX=Math.max(0,panSt.vx-(e.clientX-panSt.x)/ds);VY=Math.max(0,panSt.vy-(e.clientY-panSt.y)/ds);render();return;}
+  if(tool==='select'&&selRect&&e.buttons){selRect.w=c-selRect.x+1;selRect.h=r-selRect.y+1;render();return;}
+  if(painting&&(tool==='paint'||tool==='erase')){paintCell(c,r);render();}
+});
+area.addEventListener('mouseup',function(e){
+  var p=getCell(e),c=p[0],r=p[1];
+  if(tool==='line'&&lineSt){pushH('Line');drawLine(lineSt[0],lineSt[1],c,r);lineSt=null;render();}
+  if(tool==='move')area.style.cursor='grab';
+  painting=false;
+});
+area.addEventListener('mouseleave',function(){painting=false;document.getElementById('stp').textContent='--';});
+
+// KEYBOARD
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  var m={m:'move',p:'paint',e:'erase',f:'fill',k:'pick',l:'line',s:'select'};
+  if(m[e.key.toLowerCase()]){var b=document.getElementById('t-'+m[e.key.toLowerCase()]);if(b)setTool(m[e.key.toLowerCase()],b);}
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
+  if(e.key==='Escape'){selRect=null;render();}
+});
+
+// HISTORY
+function pushH(l){hist.push(grid.map(function(r){return r.slice();}));hlab.push(l);if(hist.length>40){hist.shift();hlab.shift();}updH();}
+function undo(){if(!hist.length)return;grid=hist.pop();hlab.pop();updH();render();}
+function updH(){var el=document.getElementById('hl');if(!hist.length){el.innerHTML='<div>No history yet</div>';return;}el.innerHTML=hlab.slice().reverse().slice(0,6).map(function(l,i){return '<div>#'+(hlab.length-i)+': '+l+'</div>';}).join('');}
+function clearCanvas(){pushH('Clear');grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});selRect=null;render();}
+
+// PALETTE
+function updPal(){
+  var el=document.getElementById('pgrid');
+  el.innerHTML=palette.map(function(h,i){return '<div class="sw'+(i===SI?' sel':'')+'" style="background:'+h+'" title="'+h+'" onclick="SI='+i+';updPal();updSS()" ondblclick="editCol('+i+')"></div>';}).join('')+'<div class="sw-add" onclick="addCol()" title="Add">+</div>';
+  document.getElementById('pcnt').textContent=palette.length;
+  updSS();updDMC();
+}
+function updSS(){var h=palette[SI]||'#fff';document.getElementById('stcol').style.background=h;document.getElementById('sthex').textContent=h;}
+function clearUnused(){
+  var used=new Set();for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)used.add(grid[r][c]);
+  var np=palette.filter(function(_,i){return used.has(i);});
+  var rm=new Array(palette.length).fill(-1);var ni=0;
+  palette.forEach(function(_,i){if(used.has(i))rm[i]=ni++;});
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)grid[r][c]=rm[grid[r][c]];
+  palette=np;SI=Math.min(SI,palette.length-1);updPal();render();
+}
+
+// COLOR PICKER
+function addCol(){cpTgt=-1;openCP('#4a9eff');}
+function editCol(i){cpTgt=i;openCP(palette[i]);}
+function openCP(hex){var el=document.getElementById('cpick');document.getElementById('cpc').value=hex;document.getElementById('cph').value=hex;el.style.display='block';el.style.top='80px';el.style.right='14px';}
+function cpChg(){document.getElementById('cph').value=document.getElementById('cpc').value;}
+function cpHex(){var v=document.getElementById('cph').value.trim();if(!v.startsWith('#'))v='#'+v;if(/^#[0-9a-fA-F]{6}$/.test(v))document.getElementById('cpc').value=v;}
+function cpOK(){var hex=document.getElementById('cpc').value;if(cpTgt===-1){palette.push(hex);SI=palette.length-1;}else palette[cpTgt]=hex;updPal();render();cpX();}
+function cpX(){document.getElementById('cpick').style.display='none';}
+document.addEventListener('click',function(e){var el=document.getElementById('cpick');if(el.style.display==='block'&&!el.contains(e.target)&&!e.target.classList.contains('sw-add')&&!e.target.classList.contains('sw'))cpX();});
+
+// DMC
+function updDMC(){
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+  var el=document.getElementById('dlist');
+  if(!sorted.length){el.innerHTML='<div style="color:#8a847c;font-size:11px">Convert an image first</div>';return;}
+  el.innerHTML=sorted.map(function(x){var dmc=nDMC(x.h);return '<div class="di"><div class="dd" style="background:'+x.h+'"></div><div><div class="dn">DMC '+dmc.num+'</div><div class="dna">'+dmc.name+'</div></div><div class="dc">'+x.n+'</div></div>';}).join('');
+}
+
+// EXPORT FLOSS PNG
+function xFlossPNG(){
+  if(!palette.length)return alert('Convert an image first');
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+  var total=sorted.reduce(function(s,x){return s+x.n;},0);
+  var rH=28,hH=65,W=600,H=hH+sorted.length*rH+20;
+  var ec=document.createElement('canvas');ec.width=W;ec.height=H;
+  var ex=ec.getContext('2d');
+  ex.fillStyle='#fff';ex.fillRect(0,0,W,H);
+  ex.fillStyle='#2d6a4f';ex.fillRect(0,0,W,hH);
+  ex.fillStyle='#fff';ex.font='bold 18px serif';ex.textAlign='left';ex.fillText('Floss List for Crosses',16,32);
+  ex.font='11px sans-serif';ex.fillStyle='#a8d5bf';ex.fillText('Use 2 strands of thread for cross stitch',16,50);
+  var xs=[16,40,82,190,390,480];
+  ex.fillStyle='#f0f0f0';ex.fillRect(0,hH,W,rH);
+  ex.font='bold 10px sans-serif';ex.fillStyle='#555';
+  ['N','Sym','DMC','Name','Stitches','%'].forEach(function(h,i){ex.fillText(h,xs[i],hH+17);});
+  sorted.forEach(function(x,idx){
+    var y=hH+rH*(idx+1);var dmc=nDMC(x.h);
+    if(idx%2===0){ex.fillStyle='#f9f9f9';ex.fillRect(0,y,W,rH);}
+    ex.fillStyle='#333';ex.font='10px sans-serif';ex.textAlign='left';ex.fillText(idx+1,xs[0],y+17);
+    ex.fillStyle=x.h;ex.fillRect(xs[1],y+6,13,13);ex.strokeStyle='#ccc';ex.lineWidth=.5;ex.strokeRect(xs[1],y+6,13,13);
+    ex.fillStyle='#333';ex.font='bold 9px monospace';ex.textAlign='center';ex.fillText(SYM[x.i%SYM.length],xs[1]+6,y+17);
+    ex.font='10px sans-serif';ex.textAlign='left';ex.fillText('DMC '+dmc.num,xs[2],y+17);
+    ex.fillStyle='#555';ex.fillText(dmc.name.substring(0,26),xs[3],y+17);
+    ex.fillStyle='#333';ex.textAlign='right';ex.fillText(x.n.toLocaleString(),xs[4]+50,y+17);
+    ex.fillStyle='#888';ex.fillText((x.n/total*100).toFixed(1)+'%',xs[5]+40,y+17);
+    ex.textAlign='left';ex.strokeStyle='#eee';ex.lineWidth=.3;ex.beginPath();ex.moveTo(0,y+rH);ex.lineTo(W,y+rH);ex.stroke();
+  });
+  var a=document.createElement('a');a.download='floss-list.png';a.href=ec.toDataURL();a.click();
+}
+
+// EXPORT FLOSS CSV
+function xFlossCSV(){
+  if(!palette.length)return alert('Convert an image first');
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+  var csv='N,Symbol,DMC,Name,Stitches,Hex\n';
+  sorted.forEach(function(x,idx){var dmc=nDMC(x.h);csv+=idx+1+','+SYM[x.i%SYM.length]+',DMC '+dmc.num+','+dmc.name+','+x.n+','+x.h+'\n';});
+  var a=document.createElement('a');a.download='floss-list.csv';a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.click();
+}
+
+// DESCRIPTION
+function genDesc(){
+  var nc=palette.filter(function(_,i){for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]===i)return true;return false;}).length;
+  var ct=parseInt(document.getElementById('fab').value);
+  var fn=document.getElementById('fab').options[document.getElementById('fab').selectedIndex].text;
+  var wI=(COLS/ct).toFixed(2),hI=(ROWS/ct).toFixed(2);
+  var wC=(COLS/ct*2.54).toFixed(2),hC=(ROWS/ct*2.54).toFixed(2);
+  var hoop=Math.ceil(Math.max(COLS,ROWS)/ct+2);
+  var desc='All patterns contain a maximum of 20-25 colors.\nPaper size: A4 (210 x 297 mm, 8.3 x 11.7 inches)\n\nPURCHASE DETAILS\n- PDF Pattern in Color x 3 Grid Sizes\n- PDF Pattern in Black and White x 3 Grid Sizes\n- PDF Floss length\n- PDF for Pattern Keeper\n\nPATTERN SIZE\nDMC colors: '+nc+'\nFabric: '+fn+'\nStitches: '+COLS+' x '+ROWS+'\nSize: '+wI+' x '+hI+' inches ('+wC+' x '+hC+' cm)\nHoop size: '+hoop+' inches';
+  var el=document.getElementById('dbox');el.textContent=desc;el.style.color='#1a1714';
+}
+function copyDesc(){
+  var t=document.getElementById('dbox').textContent;
+  if(!t||t.includes('Click Generate'))return;
+  navigator.clipboard.writeText(t).then(function(){
+    var b=document.getElementById('cbtn');b.textContent='Copied!';b.classList.add('pr');
+    setTimeout(function(){b.textContent='Copy';b.classList.remove('pr');},2000);
+  });
+}
+
+// EXPORT PNG
+function xPNG(){
+  var sz=CELL,W=COLS*sz,H=ROWS*sz;
+  var ec=document.createElement('canvas');ec.width=W;ec.height=H;
+  var ex=ec.getContext('2d');ex.fillStyle='#f0ece3';ex.fillRect(0,0,W,H);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){var ci=grid[r][c];if(ci>=0&&ci<palette.length){ex.fillStyle=palette[ci];ex.fillRect(c*sz,r*sz,sz,sz);}}
+  var a=document.createElement('a');a.download='cross-stitch.png';a.href=ec.toDataURL();a.click();
+}
+
+// EXPORT CHART
+function xChart(){
+  var sz=14,W=COLS*sz+50,H=ROWS*sz+60;
+  var ec=document.createElement('canvas');ec.width=W;ec.height=H;
+  var ex=ec.getContext('2d');ex.fillStyle='#fff';ex.fillRect(0,0,W,H);
+  ex.font='bold 12px serif';ex.fillStyle='#333';ex.fillText('Cross Stitch Pattern - '+COLS+'x'+ROWS,10,16);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
+    var ci=grid[r][c];var px=25+c*sz,py=28+r*sz;
+    if(ci>=0&&ci<palette.length){
+      ex.fillStyle=palette[ci];ex.fillRect(px,py,sz,sz);
+      var rgb=h2r(palette[ci]);var lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
+      ex.fillStyle=lum>140?'#000':'#fff';ex.font=(sz-3)+'px monospace';ex.textAlign='center';ex.textBaseline='middle';
+      ex.fillText(SYM[ci%SYM.length],px+sz/2,py+sz/2);
+    }
+    ex.strokeStyle='rgba(0,0,0,.1)';ex.lineWidth=.4;ex.strokeRect(px,py,sz,sz);
+  }
+  var a=document.createElement('a');a.download='cross-stitch-chart.png';a.href=ec.toDataURL();a.click();
+}
+
+// REFERENCE IMAGE
+var dref=document.getElementById('dref');
+document.getElementById('rfile').onchange=function(e){loadRef(e.target.files[0]);};
+dref.addEventListener('dragover',function(e){e.preventDefault();dref.style.borderColor='#2d6a4f';});
+dref.addEventListener('dragleave',function(){dref.style.borderColor='';});
+dref.addEventListener('drop',function(e){e.preventDefault();dref.style.borderColor='';loadRef(e.dataTransfer.files[0]);});
+function loadRef(f){
+  if(!f||!f.type.startsWith('image/'))return;
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    refSrc=new Image();
+    refSrc.onload=function(){
+      document.getElementById('rimg').src=ev.target.result;
+      document.getElementById('rimg').style.display='block';
+      document.getElementById('rbtns').style.display='block';
+      cvtRef();
+    };
+    refSrc.src=ev.target.result;
+  };
+  rd.readAsDataURL(f);
+}
+function cvtRef(){
+  if(!refSrc)return;
+  var nc=parseInt(document.getElementById('nc').value);
+  var bgt=parseInt(document.getElementById('bg').value);
+  var tmp=document.createElement('canvas');tmp.width=COLS;tmp.height=ROWS;
+  var tx=tmp.getContext('2d');
+  // Draw with white background first, then transparent on top to detect alpha
+  tx.fillStyle='#ffffff';tx.fillRect(0,0,COLS,ROWS);
+  tx.drawImage(refSrc,0,0,COLS,ROWS);
+  var pixW=tx.getImageData(0,0,COLS,ROWS).data;
+  // Also draw on black bg to detect transparency
+  tx.fillStyle='#000000';tx.fillRect(0,0,COLS,ROWS);
+  tx.drawImage(refSrc,0,0,COLS,ROWS);
+  var pixB=tx.getImageData(0,0,COLS,ROWS).data;
+
+  var pg=[];
+  var bgMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
+
+  for(var i=0;i<ROWS;i++){
+    pg.push([]);
+    for(var j=0;j<COLS;j++){
+      var idx=(i*COLS+j)*4;
+      // Use white-bg version as the actual color
+      var rgb=[pixW[idx],pixW[idx+1],pixW[idx+2]];
+      pg[i].push(rgb);
+      // Detect transparent pixels: if pixel is white on white-bg AND black on black-bg
+      // then it was originally transparent
+      var onBlack=[pixB[idx],pixB[idx+1],pixB[idx+2]];
+      var isTransparent=(rgb[0]>240&&rgb[1]>240&&rgb[2]>240&&onBlack[0]<15&&onBlack[1]<15&&onBlack[2]<15);
+      if(isTransparent){bgMask[i][j]=true;continue;}
+      // Also apply manual threshold if user set it (for JPG without alpha)
+      if(bgt>0&&rgb[0]>=bgt&&rgb[1]>=bgt&&rgb[2]>=bgt){
+        // Mark as candidate bg
+        bgMask[i][j]=true;
+      }
+    }
+  }
+
+  // If image has transparent pixels, use those as bg mask (ignore threshold)
+  var hasAlpha=false;
+  for(var i=0;i<ROWS&&!hasAlpha;i++)for(var j=0;j<COLS&&!hasAlpha;j++){
+    var idx=(i*COLS+j)*4;
+    var onBlack2=[pixB[idx],pixB[idx+1],pixB[idx+2]];
+    var onWhite2=[pixW[idx],pixW[idx+1],pixW[idx+2]];
+    if(onWhite2[0]>240&&onBlack2[0]<15)hasAlpha=true;
+  }
+
+  if(hasAlpha){
+    // Re-build bgMask using only alpha detection
+    bgMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
+    for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++){
+      var idx=(i*COLS+j)*4;
+      var onBlack3=[pixB[idx],pixB[idx+1],pixB[idx+2]];
+      var onWhite3=[pixW[idx],pixW[idx+1],pixW[idx+2]];
+      if(onWhite3[0]>240&&onWhite3[1]>240&&onWhite3[2]>240&&onBlack3[0]<15&&onBlack3[1]<15&&onBlack3[2]<15)
+        bgMask[i][j]=true;
+    }
+  } else if(bgt>0){
+    // JPG: use smarter flood fill from edges only
+    var visited=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
+    bgMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
+    var stk=[];
+    for(var ei=0;ei<ROWS;ei++){
+      for(var ej2=0;ej2<2;ej2++){
+        var c2=ej2===0?0:COLS-1;
+        var px2=pg[ei][c2];
+        if(px2[0]>=bgt&&px2[1]>=bgt&&px2[2]>=bgt&&!visited[ei][c2]){
+          visited[ei][c2]=true;stk.push([ei,c2]);
+        }
+      }
+    }
+    for(var ej=0;ej<COLS;ej++){
+      for(var ei2=0;ei2<2;ei2++){
+        var r2=ei2===0?0:ROWS-1;
+        var px3=pg[r2][ej];
+        if(px3[0]>=bgt&&px3[1]>=bgt&&px3[2]>=bgt&&!visited[r2][ej]){
+          visited[r2][ej]=true;stk.push([r2,ej]);
+        }
+      }
+    }
+    while(stk.length){
+      var pos=stk.pop();var r3=pos[0],c3=pos[1];
+      if(r3<0||r3>=ROWS||c3<0||c3>=COLS||bgMask[r3][c3])continue;
+      var px4=pg[r3][c3];
+      if(px4[0]<bgt||px4[1]<bgt||px4[2]<bgt)continue;
+      bgMask[r3][c3]=true;
+      if(!visited[r3-1]?.[c3])stk.push([r3-1,c3]);
+      if(!visited[r3+1]?.[c3])stk.push([r3+1,c3]);
+      if(!visited[r3]?.[c3-1])stk.push([r3,c3-1]);
+      if(!visited[r3]?.[c3+1])stk.push([r3,c3+1]);
+    }
+  }
+
+  // Collect foreground pixels
+  var fg=[];
+  for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++)if(!bgMask[i][j])fg.push(pg[i][j]);
+  var src=fg.length>=nc*5?fg:pg.flat();
+
+  var ctrs=medCut(src,nc);
+  palette=ctrs.map(function(c){return r2h(Math.round(c[0]),Math.round(c[1]),Math.round(c[2]));});
+  pushH('Convert Image');
+  grid=pg.map(function(row,i){return row.map(function(px,j){
+    if(bgMask[i][j])return -1;
+    return nHex(px,palette);
+  });});
+  SI=0;updPal();updSt();szCanvas();VX=0;VY=0;fitZoom();
+}
+
+function medCut(pixels,k){
+  function avg(pts){if(!pts.length)return[128,128,128];var s=[0,0,0];for(var i=0;i<pts.length;i++){s[0]+=pts[i][0];s[1]+=pts[i][1];s[2]+=pts[i][2];}return[s[0]/pts.length,s[1]/pts.length,s[2]/pts.length];}
+  function cut(pts,d){
+    if(d===0||pts.length===0)return[avg(pts)];
+    var mn=[255,255,255],mx=[0,0,0];
+    for(var i=0;i<pts.length;i++){for(var j=0;j<3;j++){if(pts[i][j]<mn[j])mn[j]=pts[i][j];if(pts[i][j]>mx[j])mx[j]=pts[i][j];}}
+    var rng=[mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2]];
+    var ch=rng[0]>=rng[1]&&rng[0]>=rng[2]?0:rng[1]>=rng[2]?1:2;
+    var s=pts.slice().sort(function(a,b){return a[ch]-b[ch];});
+    var mid=Math.floor(s.length/2);
+    return cut(s.slice(0,mid),d-1).concat(cut(s.slice(mid),d-1));
+  }
+  var samp=pixels.length>4000?pixels.filter(function(_,i){return i%Math.floor(pixels.length/4000)===0;}):pixels;
+  var dep=Math.ceil(Math.log2(Math.max(k,2)));
+  var ctrs=cut(samp.slice(),dep);
+  while(ctrs.length>k){
+    var md=1e9,mi=0,mj=1;
+    for(var i=0;i<ctrs.length;i++)for(var j=i+1;j<ctrs.length;j++){var dd=Math.pow(ctrs[i][0]-ctrs[j][0],2)+Math.pow(ctrs[i][1]-ctrs[j][1],2)+Math.pow(ctrs[i][2]-ctrs[j][2],2);if(dd<md){md=dd;mi=i;mj=j;}}
+    var mg=[(ctrs[mi][0]+ctrs[mj][0])/2,(ctrs[mi][1]+ctrs[mj][1])/2,(ctrs[mi][2]+ctrs[mj][2])/2];
+    var nc2=[];for(var i=0;i<ctrs.length;i++)if(i!==mi&&i!==mj)nc2.push(ctrs[i]);nc2.push(mg);ctrs=nc2;
+  }
+  for(var it=0;it<15;it++){
+    var sm=Array.from({length:ctrs.length},function(){return[0,0,0,0];});
+    for(var i=0;i<samp.length;i++){var ci=nRgb(samp[i],ctrs);sm[ci][0]+=samp[i][0];sm[ci][1]+=samp[i][1];sm[ci][2]+=samp[i][2];sm[ci][3]++;}
+    ctrs=sm.map(function(s,i){return s[3]?[s[0]/s[3],s[1]/s[3],s[2]/s[3]]:ctrs[i];});
+  }
+  return ctrs;
+}
+
+// STATUS
+function updSt(){
+  document.getElementById('sts').textContent=COLS+' x '+ROWS;
+  document.getElementById('stc').textContent=(COLS*ROWS).toLocaleString();
+  var ct=parseInt(document.getElementById('fab').value);
+  document.getElementById('fcm').textContent=(COLS/ct*2.54).toFixed(1)+' x '+(ROWS/ct*2.54).toFixed(1)+' cm';
+}
+function onSz(){var v=parseInt(document.getElementById('sz').value);COLS=v;ROWS=v;document.getElementById('szv').textContent=v+' x '+v;grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});VX=0;VY=0;szCanvas();updSt();fitZoom();}
+function onNc(){document.getElementById('ncv').textContent=document.getElementById('nc').value;if(refSrc)cvtRef();}
+function onBg(){document.getElementById('bgv').textContent=document.getElementById('bg').value;if(refSrc)cvtRef();}
+
+
+
+// ─── PDF EXPORT ──────────────────────────────────────────────────────────────
+function loadJsPDF(cb){
+  if(window.jspdf){cb();return;}
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload=function(){cb();};
+  document.head.appendChild(s);
+}
+
+// Draw pattern to offscreen canvas and return dataURL
+function makePatternCanvas(mode,cellSz){
+  var W=COLS*cellSz,H=ROWS*cellSz;
+  var ec=document.createElement('canvas');ec.width=W;ec.height=H;
+  var ex=ec.getContext('2d');
+  ex.fillStyle='#ffffff';ex.fillRect(0,0,W,H);
+  for(var r=0;r<ROWS;r++){
+    for(var c=0;c<COLS;c++){
+      var ci=grid[r][c];
+      var px=c*cellSz,py=r*cellSz;
+      if(ci>=0&&ci<palette.length){
+        if(mode==='bw'){
+          var rgb=h2r(palette[ci]);
+          var lum=rgb?Math.round(0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]):200;
+          ex.fillStyle='rgb('+lum+','+lum+','+lum+')';
+        } else {
+          ex.fillStyle=palette[ci];
+        }
+        ex.fillRect(px,py,cellSz,cellSz);
+        // draw symbol
+        if(cellSz>=6){
+          var rgb2=mode==='bw'?[128,128,128]:h2r(palette[ci]);
+          var lum2=rgb2?0.299*rgb2[0]+0.587*rgb2[1]+0.114*rgb2[2]:128;
+          ex.fillStyle=lum2>140?'rgba(0,0,0,0.65)':'rgba(255,255,255,0.85)';
+          ex.font=Math.max(5,cellSz-3)+'px monospace';
+          ex.textAlign='center';ex.textBaseline='middle';
+          ex.fillText(SYM[ci%SYM.length],px+cellSz/2,py+cellSz/2);
+        }
+      }
+      ex.strokeStyle='rgba(0,0,0,0.12)';ex.lineWidth=0.3;ex.strokeRect(px,py,cellSz,cellSz);
+    }
+  }
+  // bold every-10 lines
+  ex.strokeStyle='rgba(0,0,0,0.3)';ex.lineWidth=0.8;
+  for(var r2=0;r2<=ROWS;r2+=10){ex.beginPath();ex.moveTo(0,r2*cellSz);ex.lineTo(W,r2*cellSz);ex.stroke();}
+  for(var c2=0;c2<=COLS;c2+=10){ex.beginPath();ex.moveTo(c2*cellSz,0);ex.lineTo(c2*cellSz,H);ex.stroke();}
+  return ec;
+}
+
+// Make preview canvas (small overview)
+function makePreviewCanvas(){
+  var maxSz=400,sz=Math.min(maxSz/COLS,maxSz/ROWS,4);
+  var W=Math.round(COLS*sz),H=Math.round(ROWS*sz);
+  var ec=document.createElement('canvas');ec.width=W;ec.height=H;
+  var ex=ec.getContext('2d');
+  ex.fillStyle='#f8f5f0';ex.fillRect(0,0,W,H);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
+    var ci=grid[r][c];
+    if(ci>=0&&ci<palette.length){ex.fillStyle=palette[ci];ex.fillRect(Math.round(c*sz),Math.round(r*sz),Math.ceil(sz),Math.ceil(sz));}
+  }
+  return ec;
+}
+
+function xPDF(mode,size){
+  if(!palette.length||!grid.flat().some(function(v){return v>=0;}))return alert('Please convert an image first');
+  loadJsPDF(function(){
+    var jsPDF=window.jspdf.jsPDF;
+    var A4W=210,A4H=297,MARGIN=10;
+    var ct=parseInt(document.getElementById('fab').value);
+    var wIn=(COLS/ct).toFixed(2),hIn=(ROWS/ct).toFixed(2);
+    var wCm=(COLS/ct*2.54).toFixed(1),hCm=(ROWS/ct*2.54).toFixed(1);
+    var modeTxt=mode==='color'?'Color':'Black & White';
+    var sizeTxt={'S':'Small (1 page)','M':'Medium (2 pages)','L':'Large (4 pages)'}[size];
+    var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+
+    // Count colors
+    var cnt=new Array(palette.length).fill(0);
+    for(var ri=0;ri<ROWS;ri++)for(var ci2=0;ci2<COLS;ci2++)if(grid[ri][ci2]>=0)cnt[grid[ri][ci2]]++;
+    var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+
+    // ── PAGE 1: Cover ────────────────────────────────────────────────────────
+    doc.setFillColor(45,106,79);doc.rect(0,0,A4W,18,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
+    doc.text('Cross Stitch Pattern',MARGIN,12);
+    doc.setFontSize(9);doc.setFont(undefined,'normal');
+    doc.text(modeTxt+' | '+sizeTxt,A4W-MARGIN,12,{align:'right'});
+    doc.setTextColor(60,60,60);doc.setFontSize(9);
+    doc.text('Pattern: '+COLS+' x '+ROWS+' stitches  |  Colors: '+palette.length,MARGIN,26);
+    doc.text('Finished: '+wIn+'" x '+hIn+'"  ('+wCm+' x '+hCm+' cm)',MARGIN,33);
+    doc.text('Fabric: '+document.getElementById('fab').options[document.getElementById('fab').selectedIndex].text,MARGIN,40);
+    // Preview image
+    var prevC=document.createElement('canvas');
+    var sz2=Math.min(3,150/Math.max(COLS,ROWS));
+    prevC.width=Math.round(COLS*sz2);prevC.height=Math.round(ROWS*sz2);
+    var px2=prevC.getContext('2d');
+    px2.fillStyle='#f8f5f0';px2.fillRect(0,0,prevC.width,prevC.height);
+    for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){var ci=grid[r][c];if(ci>=0&&ci<palette.length){px2.fillStyle=palette[ci];px2.fillRect(Math.round(c*sz2),Math.round(r*sz2),Math.ceil(sz2),Math.ceil(sz2));}}
+    var prevData=prevC.toDataURL('image/jpeg',0.9);
+    var maxW=A4W-MARGIN*2,maxH=A4H-55;
+    var sc=Math.min(maxW/prevC.width,maxH/prevC.height);
+    var pw=prevC.width*sc,ph=prevC.height*sc;
+    doc.addImage(prevData,'JPEG',(A4W-pw)/2,50,pw,ph);
+
+    // ── CHART PAGES (vector drawn) ───────────────────────────────────────────
+    var blocksX,blocksY;
+    if(size==='S'){blocksX=1;blocksY=1;}
+    else if(size==='M'){blocksX=2;blocksY=1;}
+    else{blocksX=2;blocksY=2;}
+
+    var bCols=Math.ceil(COLS/blocksX);
+    var bRows=Math.ceil(ROWS/blocksY);
+    var blockNum=0;
+
+    for(var by=0;by<blocksY;by++){
+      for(var bx=0;bx<blocksX;bx++){
+        blockNum++;
+        doc.addPage();
+        var x0=bx*bCols, y0=by*bRows;
+        var x1=Math.min(x0+bCols,COLS), y1=Math.min(y0+bRows,ROWS);
+        var bW=x1-x0, bH=y1-y0;
+
+        // Calculate cell size to fill page
+        var rulerL=10,rulerT=8;
+        var availW=A4W-MARGIN-rulerL-2;
+        var availH=A4H-MARGIN-rulerT-8;
+        var cell=Math.min(availW/bW, availH/bH);
+        cell=Math.max(0.8,Math.min(cell,5));
+        var chartX=MARGIN+rulerL;
+        var chartY=MARGIN+rulerT;
+        var chartW=bW*cell, chartH=bH*cell;
+
+        // Header
+        doc.setFillColor(45,106,79);doc.rect(0,0,A4W,8,'F');
+        doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont(undefined,'bold');
+        doc.text('Chart Block '+blockNum+' / '+(blocksX*blocksY),MARGIN,5.5);
+        doc.setFont(undefined,'normal');doc.setFontSize(7);
+        doc.text('X:'+(x0+1)+'-'+x1+'  Y:'+(y0+1)+'-'+y1,A4W-MARGIN,5.5,{align:'right'});
+
+        // White chart bg
+        doc.setFillColor(255,255,255);doc.rect(chartX,chartY,chartW,chartH,'F');
+
+        // ── Draw each cell with vector symbols ──────────────────────────────
+        for(var r=0;r<bH;r++){
+          for(var c=0;c<bW;c++){
+            var gi=grid[y0+r][x0+c];
+            var cx=chartX+c*cell, cy=chartY+r*cell;
+
+            if(gi>=0&&gi<palette.length){
+              if(mode==='color'){
+                // Light tint background
+                var rgb=h2r(palette[gi]);
+                if(rgb){
+                  doc.setFillColor(
+                    Math.round(rgb[0]*0.3+255*0.7),
+                    Math.round(rgb[1]*0.3+255*0.7),
+                    Math.round(rgb[2]*0.3+255*0.7)
+                  );
+                  doc.rect(cx,cy,cell,cell,'F');
+                }
+              }
+              // Draw symbol as vector using jsPDF text
+              doc.setTextColor(0,0,0);
+              doc.setFontSize(cell*2.2);
+              doc.setFont(undefined,'bold');
+              doc.text(SYM[gi%SYM.length],cx+cell*0.5,cy+cell*0.78,{align:'center'});
+            }
+
+            // Cell border
+            doc.setDrawColor(180,180,180);doc.setLineWidth(0.03);
+            doc.rect(cx,cy,cell,cell);
+          }
+        }
+
+        // Bold every-10 lines
+        doc.setDrawColor(100,100,100);doc.setLineWidth(0.2);
+        for(var r2=0;r2<=bH;r2+=10){
+          doc.line(chartX,chartY+r2*cell,chartX+chartW,chartY+r2*cell);
+        }
+        for(var c2=0;c2<=bW;c2+=10){
+          doc.line(chartX+c2*cell,chartY,chartX+c2*cell,chartY+chartH);
+        }
+        doc.setDrawColor(40,40,40);doc.setLineWidth(0.4);
+        doc.rect(chartX,chartY,chartW,chartH);
+
+        // Rulers
+        doc.setTextColor(60,60,60);doc.setFontSize(4);doc.setFont(undefined,'normal');
+        for(var c3=x0;c3<x1;c3+=10){
+          if(c3===0)continue;
+          doc.text(String(c3),chartX+(c3-x0)*cell,chartY-2,{align:'center'});
+        }
+        for(var r3=y0;r3<y1;r3+=10){
+          if(r3===0)continue;
+          doc.text(String(r3),chartX-2,chartY+(r3-y0)*cell+cell*0.3,{align:'right'});
+        }
+
+        // Footer
+        doc.setFontSize(5.5);doc.setTextColor(100,100,100);
+        doc.text(COLS+' x '+ROWS+'  |  '+wCm+' x '+hCm+' cm  |  '+palette.length+' colors',
+          A4W/2,chartY+chartH+4,{align:'center'});
+        doc.text(blockNum+1+' / '+(blocksX*blocksY+2),A4W-MARGIN,A4H-2,{align:'right'});
+      }
+    }
+
+    // ── COLOR LEGEND PAGE ────────────────────────────────────────────────────
+    doc.addPage();
+    doc.setFillColor(45,106,79);doc.rect(0,0,A4W,14,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');
+    doc.text('Color Legend',MARGIN,9);
+    doc.setFontSize(8);doc.setFont(undefined,'normal');
+    doc.text('Finished: '+wIn+'" x '+hIn+'"  ('+wCm+' x '+hCm+' cm)',A4W-MARGIN,9,{align:'right'});
+
+    var legY=22,rowH=7;
+    var total=sorted.reduce(function(s,x){return s+x.n;},0);
+    var cols2=[MARGIN,MARGIN+8,MARGIN+18,MARGIN+28,MARGIN+80,MARGIN+128,MARGIN+158];
+
+    // Header row
+    doc.setFillColor(240,240,240);doc.rect(MARGIN,legY-4,A4W-MARGIN*2,rowH,'F');
+    doc.setTextColor(80,80,80);doc.setFontSize(7);doc.setFont(undefined,'bold');
+    ['N','Sym','','DMC','Name','Stitches','%'].forEach(function(h,i){doc.text(h,cols2[i],legY);});
+    legY+=rowH-1;
+
+    sorted.forEach(function(x,idx){
+      if(legY>A4H-12){doc.addPage();legY=15;}
+      if(idx%2===0){doc.setFillColor(250,249,247);doc.rect(MARGIN,legY-4,A4W-MARGIN*2,rowH,'F');}
+      var dmc=nDMC(x.h);
+      var rgb=h2r(x.h)||[200,200,200];
+
+      // Color swatch
+      doc.setFillColor(rgb[0],rgb[1],rgb[2]);
+      doc.rect(cols2[2],legY-3.5,5,5,'F');
+      doc.setDrawColor(160,160,160);doc.setLineWidth(0.2);doc.rect(cols2[2],legY-3.5,5,5);
+
+      // Symbol in box
+      doc.setFillColor(245,245,245);doc.rect(cols2[1]-1,legY-3.5,6,5,'F');
+      doc.setDrawColor(180,180,180);doc.setLineWidth(0.2);doc.rect(cols2[1]-1,legY-3.5,6,5);
+      doc.setTextColor(0,0,0);doc.setFontSize(6);doc.setFont(undefined,'bold');
+      doc.text(SYM[x.i%SYM.length],cols2[1]+2,legY,{align:'center'});
+
+      doc.setTextColor(30,30,30);doc.setFont(undefined,'normal');doc.setFontSize(7);
+      doc.text(String(idx+1),cols2[0],legY);
+      doc.text('DMC '+String(dmc.num),cols2[3],legY);
+      doc.setTextColor(60,60,60);
+      doc.text(dmc.name.substring(0,30),cols2[4],legY);
+      doc.setTextColor(80,80,80);doc.textAlign='right';
+      doc.text(x.n.toLocaleString(),cols2[5]+40,legY);
+      doc.text((x.n/total*100).toFixed(1)+'%',cols2[6]+22,legY);
+      doc.setDrawColor(225,225,225);doc.setLineWidth(0.2);
+      doc.line(MARGIN,legY+2,A4W-MARGIN,legY+2);
+      legY+=rowH-1;
+    });
+
+    var fname='cross-stitch-'+mode+'-'+size+'.pdf';
+    doc.save(fname);
+  });
+}
+
+// PDF Floss Length
+function xFlossLengthPDF(){
+  if(!palette.length||!grid.flat().some(function(v){return v>=0;}))return alert('Please convert an image first');
+  loadJsPDF(function(){
+    var jsPDF=window.jspdf.jsPDF;
+    var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    var A4W=210,MARGIN=12;
+    var ct=parseInt(document.getElementById('fab').value);
+    var wIn=(COLS/ct).toFixed(1),hIn=(ROWS/ct).toFixed(1);
+    var wCm=(COLS/ct*2.54).toFixed(1),hCm=(ROWS/ct*2.54).toFixed(1);
+
+    doc.setFillColor(45,106,79);doc.rect(0,0,A4W,18,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
+    doc.text('Thread Length Guide',MARGIN,11);
+    doc.setFontSize(8);doc.setFont(undefined,'normal');
+    doc.text(COLS+' x '+ROWS+' stitches  |  '+document.getElementById('fab').options[document.getElementById('fab').selectedIndex].text,A4W-MARGIN,11,{align:'right'});
+
+    doc.setTextColor(80,80,80);doc.setFontSize(8);
+    doc.text('Finished size: '+wIn+'" x '+hIn+'" ('+wCm+' x '+hCm+' cm)',MARGIN,24);
+    doc.text('Use 2 strands of thread. Each stitch uses approx. 3.6cm of thread.',MARGIN,30);
+    doc.text('Add 20% extra for knots and waste. Skein = 800cm (8m).',MARGIN,35);
+
+    var cnt=new Array(palette.length).fill(0);
+    for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+    var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+
+    var legY=44,rowH=8;
+    var cols2=[MARGIN,MARGIN+8,MARGIN+18,MARGIN+28,MARGIN+78,MARGIN+118,MARGIN+140,MARGIN+165];
+    doc.setFillColor(240,240,240);doc.rect(MARGIN,legY-4,A4W-MARGIN*2,rowH,'F');
+    doc.setTextColor(60,60,60);doc.setFontSize(7);doc.setFont(undefined,'bold');
+    ['N','Sym','','DMC Number','Name','Stitches','Length (cm)','Skeins'].forEach(function(h,i){doc.text(h,cols2[i],legY);});
+    legY+=rowH;
+
+    sorted.forEach(function(x,idx){
+      if(legY>280){doc.addPage();legY=15;}
+      if(idx%2===0){doc.setFillColor(250,249,247);doc.rect(MARGIN,legY-4,A4W-MARGIN*2,rowH,'F');}
+      var dmc=nDMC(x.h);
+      var rgb=h2r(x.h)||[200,200,200];
+      var lenCm=Math.ceil(x.n*3.6*1.2);
+      var skeins=Math.ceil(lenCm/800);
+      doc.setFillColor(rgb[0],rgb[1],rgb[2]);doc.rect(cols2[2],legY-3.5,5,5,'F');
+      doc.setDrawColor(180,180,180);doc.setLineWidth(0.2);doc.rect(cols2[2],legY-3.5,5,5,'S');
+      doc.setTextColor(30,30,30);doc.setFont(undefined,'normal');doc.setFontSize(7);
+      doc.text(String(idx+1),cols2[0],legY);
+      doc.text(SYM[x.i%SYM.length],cols2[1],legY);
+      doc.text('DMC '+String(dmc.num),cols2[3],legY);
+      doc.text(dmc.name.substring(0,26),cols2[4],legY);
+      doc.text(x.n.toLocaleString(),cols2[5],legY);
+      doc.text(lenCm.toLocaleString(),cols2[6],legY);
+      doc.text(String(skeins),cols2[7],legY);
+      doc.setDrawColor(230,230,230);doc.setLineWidth(0.2);doc.line(MARGIN,legY+2,A4W-MARGIN,legY+2);
+      legY+=rowH;
+    });
+
+    doc.save('floss-length.pdf');
+  });
+}
+
+// PDF for Pattern Keeper - 4 blocks (2x2 split) + legend page
+function xPatternKeeper(){
+  if(!palette.length||!grid.flat().some(function(v){return v>=0;}))return alert('Please convert an image first');
+  loadJsPDF(function(){
+    var jsPDF=window.jspdf.jsPDF;
+    // Portrait A4
+    var PW=210,PH=297,MARGIN=8;
+    var ct=parseInt(document.getElementById('fab').value);
+    var wCm=(COLS/ct*2.54).toFixed(1),hCm=(ROWS/ct*2.54).toFixed(1);
+
+    var cnt=new Array(palette.length).fill(0);
+    for(var ri=0;ri<ROWS;ri++)for(var ci2=0;ci2<COLS;ci2++)if(grid[ri][ci2]>=0)cnt[grid[ri][ci2]]++;
+    var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+
+    // 2x2 split: 4 blocks
+    var HX=Math.ceil(COLS/2); // half cols
+    var HY=Math.ceil(ROWS/2); // half rows
+    var blocks=[
+      {x0:0,  y0:0,  x1:HX,   y1:HY},    // top-left
+      {x0:HX, y0:0,  x1:COLS, y1:HY},    // top-right
+      {x0:0,  y0:HY, x1:HX,   y1:ROWS},  // bottom-left
+      {x0:HX, y0:HY, x1:COLS, y1:ROWS}   // bottom-right
+    ];
+    var blockLabels=['Top Left','Top Right','Bottom Left','Bottom Right'];
+
+    var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    var totalPages=blocks.length+1; // 4 chart + 1 legend
+
+    blocks.forEach(function(blk,idx){
+      if(idx>0)doc.addPage('a4','portrait');
+
+      var bW=blk.x1-blk.x0;
+      var bH=blk.y1-blk.y0;
+
+      // Render at high resolution: 12px per stitch
+      var PX=12;
+      var rulerPx=30;
+      var canW=bW*PX+rulerPx;
+      var canH=bH*PX+rulerPx;
+
+      var ec=document.createElement('canvas');
+      ec.width=canW; ec.height=canH;
+      var ex=ec.getContext('2d');
+
+      // White background
+      ex.fillStyle='#ffffff';ex.fillRect(0,0,canW,canH);
+
+      // Draw cells
+      for(var r=0;r<bH;r++){
+        for(var c=0;c<bW;c++){
+          var gi=grid[blk.y0+r][blk.x0+c];
+          var cx=rulerPx+c*PX, cy=rulerPx+r*PX;
+          if(gi>=0&&gi<palette.length){
+            ex.fillStyle='#e6e6e6';
+            ex.fillRect(cx,cy,PX,PX);
+            ex.fillStyle='#000000';
+            ex.font='bold '+(PX-2)+'px monospace';
+            ex.textAlign='center';
+            ex.textBaseline='middle';
+            ex.fillText(SYM[gi%SYM.length],cx+PX/2,cy+PX/2);
+          }
+          ex.strokeStyle='rgba(150,150,150,0.5)';
+          ex.lineWidth=0.3;
+          ex.strokeRect(cx,cy,PX,PX);
+        }
+      }
+
+      // Bold every-10 lines
+      ex.strokeStyle='rgba(70,70,70,0.7)';ex.lineWidth=1;
+      for(var r2=0;r2<=bH;r2+=10){
+        var liy=rulerPx+r2*PX;
+        ex.beginPath();ex.moveTo(rulerPx,liy);ex.lineTo(rulerPx+bW*PX,liy);ex.stroke();
+      }
+      for(var c2=0;c2<=bW;c2+=10){
+        var lix=rulerPx+c2*PX;
+        ex.beginPath();ex.moveTo(lix,rulerPx);ex.lineTo(lix,rulerPx+bH*PX);ex.stroke();
+      }
+      // Outer border
+      ex.strokeStyle='#222222';ex.lineWidth=2;
+      ex.strokeRect(rulerPx,rulerPx,bW*PX,bH*PX);
+
+      // Col ruler (every 10, show actual coords)
+      ex.fillStyle='#333333';
+      ex.font='bold 10px sans-serif';
+      ex.textAlign='center';ex.textBaseline='middle';
+      for(var c3=0;c3<=bW;c3+=10){
+        if(c3===0)continue;
+        ex.fillText(String(blk.x0+c3),rulerPx+c3*PX,rulerPx/2);
+      }
+      // Row ruler (every 10)
+      ex.textAlign='right';
+      for(var r3=0;r3<=bH;r3+=10){
+        if(r3===0)continue;
+        ex.fillText(String(blk.y0+r3),rulerPx-3,rulerPx+r3*PX-PX/2);
+      }
+
+      // Embed into PDF - fill entire A4 content area
+      var imgData=ec.toDataURL('image/png');
+      var availW=PW-MARGIN*2;
+      var availH=PH-MARGIN*2-12; // leave room for header/footer
+      var scaleX=availW/canW;
+      var scaleY=availH/canH;
+      var sc=Math.min(scaleX,scaleY);
+      var pw2=canW*sc, ph2=canH*sc;
+      var ox=(PW-pw2)/2;
+      var oy=MARGIN+4;
+
+      // Header
+      doc.setFontSize(8);doc.setFont(undefined,'bold');doc.setTextColor(40,40,40);
+      doc.text(
+        'Chart Block '+(idx+1)+' / '+blocks.length+'  —  '+blockLabels[idx]+'  (X:'+(blk.x0+1)+'-'+blk.x1+'  Y:'+(blk.y0+1)+'-'+blk.y1+')',
+        PW/2, MARGIN+1, {align:'center'}
+      );
+
+      doc.addImage(imgData,'PNG',ox,oy,pw2,ph2);
+
+      // Footer
+      doc.setFontSize(6);doc.setFont(undefined,'normal');doc.setTextColor(100,100,100);
+      doc.text(
+        COLS+' x '+ROWS+' stitches  |  '+wCm+' x '+hCm+' cm  |  '+sorted.length+' colors',
+        PW/2, oy+ph2+4, {align:'center'}
+      );
+      doc.text((idx+1)+' / '+totalPages, PW-MARGIN, PH-3, {align:'right'});
+    });
+
+    // ── LEGEND PAGE ─────────────────────────────────────────────────────────
+    doc.addPage('a4','portrait');
+    doc.setFontSize(11);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
+    doc.text('Symbol Legend',MARGIN,12);
+    doc.setLineWidth(0.4);doc.setDrawColor(60,60,60);
+    doc.line(MARGIN,14,PW-MARGIN,14);
+
+    var nCols3=2; // 2 columns in portrait
+    var colW2=(PW-MARGIN*2)/nCols3;
+    var hx=[0,9,27,70];
+    for(var hc=0;hc<nCols3;hc++){
+      var ox2=MARGIN+hc*colW2;
+      doc.setFontSize(7);doc.setFont(undefined,'bold');doc.setTextColor(60,60,60);
+      ['Sym','DMC Number','Name','Stitches'].forEach(function(h,i){doc.text(h,ox2+hx[i],20);});
+      doc.setDrawColor(150,150,150);doc.setLineWidth(0.2);
+      doc.line(ox2,22,ox2+colW2-2,22);
+    }
+
+    var legY=28,rowH=5.5,colIdx=0;
+    sorted.forEach(function(x){
+      var dmc=nDMC(x.h);
+      var ox3=MARGIN+colIdx*colW2;
+
+      doc.setFillColor(230,230,230);
+      doc.rect(ox3+hx[0],legY-3.5,7,4.5,'F');
+      doc.setDrawColor(130,130,130);doc.setLineWidth(0.15);
+      doc.rect(ox3+hx[0],legY-3.5,7,4.5);
+      doc.setFontSize(6);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
+      doc.text(SYM[x.i%SYM.length],ox3+hx[0]+3.5,legY,{align:'center'});
+
+      doc.setFont(undefined,'normal');doc.setFontSize(6);
+      doc.text('DMC '+String(dmc.num),ox3+hx[1],legY);
+      doc.setTextColor(40,40,40);
+      doc.text(dmc.name.substring(0,26),ox3+hx[2],legY);
+      doc.setTextColor(100,100,100);
+      doc.text(x.n.toLocaleString(),ox3+colW2-3,legY,{align:'right'});
+
+      doc.setDrawColor(210,210,210);doc.setLineWidth(0.1);
+      doc.line(ox3,legY+1.5,ox3+colW2-2,legY+1.5);
+
+      legY+=rowH;
+      if(legY>PH-10){
+        legY=28;colIdx++;
+        if(colIdx>=nCols3){colIdx=0;legY=28;doc.addPage('a4','portrait');}
+      }
+    });
+
+    // Size info
+    doc.setFontSize(7);doc.setTextColor(80,80,80);
+    doc.text('Finished size: '+wCm+' x '+hCm+' cm  |  '+COLS+' x '+ROWS+' stitches  |  '+sorted.length+' DMC colors',
+      PW/2, PH-8, {align:'center'});
+    doc.setFontSize(5);doc.setTextColor(130,130,130);
+    doc.text(totalPages+' / '+totalPages,PW-MARGIN,PH-3,{align:'right'});
+
+    doc.save('pattern-keeper.pdf');
+  });
+}
+
+// ─── MOCKUP PROMPT GENERATOR (AI-powered via Claude) ────────────────────────
+function genMockupPrompt(){
+  var ct=parseInt(document.getElementById('fab').value);
+  var wIn=(COLS/ct).toFixed(1), hIn=(ROWS/ct).toFixed(1);
+  var fabricName=document.getElementById('fab').options[document.getElementById('fab').selectedIndex].text;
+  var nc=palette.filter(function(_,i){
+    for(var r=0;r<ROWS;r++)for(var c2=0;c2<COLS;c2++)if(grid[r][c2]===i)return true;
+    return false;
+  }).length;
+
+  // Get top colors with DMC names
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c2=0;c2<COLS;c2++)if(grid[r][c2]>=0)cnt[grid[r][c2]]++;
+  var topColors=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};})
+    .sort(function(a,b){return b.n-a.n;}).slice(0,8)
+    .filter(function(x){return x.n>0;})
+    .map(function(x){var d=nDMC(x.h);return d.name;});
+  var colorList=[...new Set(topColors)].join(', ');
+
+  // Show loading state
+  var box=document.getElementById('mockup-box');
+  var txt=document.getElementById('mockup-text');
+  box.style.display='block';
+  txt.textContent='Generating optimized prompt with AI...';
+  document.getElementById('mockup-copy-btn').disabled=true;
+
+  // Call Claude API to generate an optimized Gemini image prompt
+  var userMsg='I have a cross stitch pattern with these details:
+'+
+    '- Size: '+COLS+' x '+ROWS+' stitches
+'+
+    '- Finished size: '+wIn+'" x '+hIn+'" on '+fabricName+'
+'+
+    '- Number of colors: '+nc+' DMC thread colors
+'+
+    '- Dominant colors: '+colorList+'
+
+'+
+    'Generate TWO things:
+'+
+    '1. A short English image generation prompt (2-3 sentences) for Google Gemini/Imagine to create a realistic mockup photo of this finished cross stitch embroidery, displayed in a round wooden hoop on a clean background, showing the Aida fabric texture and X-shaped stitches. Include a placeholder [SUBJECT] where the user should describe their design.
+'+
+    '2. The same prompt but formatted for Midjourney with --ar 1:1 --style raw --q 2
+
+'+
+    'Format your response exactly as:
+'+
+    'GEMINI:
+[prompt here]
+
+MIDJOURNEY:
+[prompt here]';
+
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      messages:[{role:'user',content:userMsg}]
+    })
+  })
+  .then(function(res){return res.json();})
+  .then(function(data){
+    var response=data.content&&data.content[0]?data.content[0].text:'Error generating prompt';
+    txt.textContent=response;
+    document.getElementById('mockup-copy-btn').disabled=false;
+  })
+  .catch(function(err){
+    // Fallback to local prompt if API fails
+    var fallback=
+'GEMINI:
+'+
+'A professional product photo of a finished cross stitch embroidery showing [SUBJECT], '+
+'stitched with '+colorList.split(',').slice(0,3).join(',').toLowerCase()+' DMC threads, '+
+'displayed in a round wooden hoop on white Aida fabric ('+fabricName+'), '+
+COLS+'x'+ROWS+' stitches, '+wIn+'" x '+hIn+'", '+
+'soft natural lighting, close-up shot showing fabric texture and X-shaped stitches clearly, 8k photo.
+
+'+
+'MIDJOURNEY:
+'+
+'/imagine prompt: finished cross stitch embroidery in wooden hoop, [SUBJECT] design, '+
+colorList.split(',').slice(0,3).join(',').toLowerCase()+' thread colors, white Aida fabric, '+
+'product photography, soft lighting, close up, realistic --ar 1:1 --style raw --q 2';
+    txt.textContent=fallback;
+    document.getElementById('mockup-copy-btn').disabled=false;
+  });
+}
+
+function copyMockup(){
+  var t=document.getElementById('mockup-text').textContent;
+  if(!t)return;
+  navigator.clipboard.writeText(t).then(function(){
+    var b=document.getElementById('mockup-copy-btn');
+    b.textContent='Copied!';b.classList.add('pr');
+    setTimeout(function(){b.textContent='Copy';b.classList.remove('pr');},2000);
+  });
+}
+
+function openMidjourney(){window.open('https://www.midjourney.com','_blank');}
+function openGemini(){
+  var t=document.getElementById('mockup-text').textContent;
+  var geminiPart=t.split('MIDJOURNEY:')[0].replace('GEMINI:
+','').trim();
+  window.open('https://gemini.google.com/app?q='+encodeURIComponent('Generate this image: '+geminiPart),'_blank');
+}
+
+
+// BOOT - runs after DOM is ready
+
+// ─── MOCKUP PROMPT GENERATOR ─────────────────────────────────────────────────
+function genMockupPrompt(){
+  var ct=parseInt(document.getElementById('fab').value);
+  var wIn=(COLS/ct).toFixed(1), hIn=(ROWS/ct).toFixed(1);
+  var nc=palette.filter(function(_,i){
+    for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]===i)return true;
+    return false;
+  }).length;
+  var fabricName=document.getElementById('fab').options[document.getElementById('fab').selectedIndex].text;
+
+  // Detect dominant colors for description
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+  var topColors=palette.map(function(h,i){return{h:h,n:cnt[i]};})
+    .sort(function(a,b){return b.n-a.n;}).slice(0,5)
+    .map(function(x){
+      var rgb=h2r(x.h);
+      if(!rgb)return'white';
+      var r=rgb[0],g=rgb[1],b=rgb[2];
+      if(r>200&&g>200&&b>200)return'white';
+      if(r<50&&g<50&&b<50)return'black';
+      if(r>g&&r>b)return r>180?'light orange':'dark red';
+      if(g>r&&g>b)return g>180?'light green':'dark green';
+      if(b>r&&b>g)return b>180?'light blue':'dark blue';
+      if(r>150&&g>150&&b<100)return'golden yellow';
+      if(r>150&&g<100&&b>150)return'purple';
+      if(r>200&&g>150&&b<100)return'orange';
+      return'beige';
+    });
+  var colorDesc=[...new Set(topColors)].join(', ');
+
+  var prompt=
+'A beautiful finished cross stitch embroidery on white Aida fabric, '+
+'displayed in a round wooden hoop, '+
+'showing a [YOUR SUBJECT] design, '+
+'stitched in '+colorDesc+' DMC thread colors, '+
+COLS+'x'+ROWS+' stitches, '+
+'fabric size '+wIn+'" x '+hIn+'" ('+fabricName+'), '+
+nc+' colors, '+
+'professional photography on a clean background, '+
+'soft natural lighting, '+
+'close-up shot showing the texture of the Aida fabric and the X-shaped cross stitches clearly, '+
+'the embroidery is neat and detailed, '+
+'realistic photo style, 8k quality';
+
+  var promptMJ=
+'/imagine prompt: finished cross stitch embroidery on white Aida cloth in wooden embroidery hoop, '+
+'[YOUR SUBJECT] design, '+colorDesc+' thread colors, '+
+COLS+'x'+ROWS+' stitches, professional product photography, '+
+'soft lighting, close up, fabric texture visible, '+
+'realistic photo --ar 1:1 --style raw --q 2';
+
+  document.getElementById('mockup-text').textContent='── General (DALL-E / Gemini / Stable Diffusion) ──
+'+prompt+'
+
+── Midjourney ──
+'+promptMJ;
+  document.getElementById('mockup-box').style.display='block';
+}
+
+function copyMockup(){
+  var t=document.getElementById('mockup-text').textContent;
+  navigator.clipboard.writeText(t).then(function(){
+    var b=document.getElementById('mockup-copy-btn');
+    b.textContent='Copied!';b.classList.add('pr');
+    setTimeout(function(){b.textContent='Copy';b.classList.remove('pr');},2000);
+  });
+}
+
+function openMidjourney(){
+  window.open('https://www.midjourney.com','_blank');
+}
+function openGemini(){
+  var t=document.getElementById('mockup-text').textContent;
+  var prompt=t.split('── Midjourney ──')[0].replace('── General (DALL-E / Gemini / Stable Diffusion) ──
+','').trim();
+  window.open('https://gemini.google.com/app?q='+encodeURIComponent('Create an image: '+prompt),'_blank');
+}
+
+// BOOT - runs after DOM is ready
+function boot(){
+  grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
+  // Wait for layout to be calculated before measuring canvas area
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      szCanvas();
+      updSt();
+      updPal();
+      fitZoom();
+      // Also handle window resize
+      window.addEventListener('resize',function(){szCanvas();render();});
+    });
+  });
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+</script>
+</body>
+</html>
