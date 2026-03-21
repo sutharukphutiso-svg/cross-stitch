@@ -318,7 +318,7 @@ var area=document.getElementById('canvas-area');
 function h2r(h){var m=h.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:null;}
 function r2h(r,g,b){return'#'+[r,g,b].map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');}
 function nRgb(px,pal){var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var d=Math.pow(px[0]-pal[i][0],2)+Math.pow(px[1]-pal[i][1],2)+Math.pow(px[2]-pal[i][2],2);if(d<bd){bd=d;b=i;}}return b;}
-function nHex(px,pal){var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var rgb=h2r(pal[i]);if(!rgb)continue;var d=Math.pow(px[0]-rgb[0],2)+Math.pow(px[1]-rgb[1],2)+Math.pow(px[2]-rgb[2],2);if(d<bd){bd=d;b=i;}}return b;}
+function nHex(px,pal){var lab=rgb2lab(px[0],px[1],px[2]);var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var rgb=h2r(pal[i]);if(!rgb)continue;var pl=rgb2lab(rgb[0],rgb[1],rgb[2]);var d=Math.pow(lab[0]-pl[0],2)+Math.pow(lab[1]-pl[1],2)+Math.pow(lab[2]-pl[2],2);if(d<bd){bd=d;b=i;}}return b;}
 function nDMC(hex){var rgb=h2r(hex);if(!rgb)return{num:'--',name:'Unknown',hex:hex};var b=null,bd=1e9;for(var i=0;i<DMC.length;i++){var e=DMC[i];var d=Math.pow(rgb[0]-e[2],2)+Math.pow(rgb[1]-e[3],2)+Math.pow(rgb[2]-e[4],2);if(d<bd){bd=d;b={num:e[0],name:e[1],hex:r2h(e[2],e[3],e[4])};}}return b||{num:'--',name:'Unknown',hex:hex};}
 function inB(c,r){return c>=0&&c<COLS&&r>=0&&r<ROWS;}
 function getCell(e){var rc=gc.getBoundingClientRect();var ds=Math.max(0.1,CELL*ZL);return[Math.floor((e.clientX-rc.left)/ds+VX),Math.floor((e.clientY-rc.top)/ds+VY)];}
@@ -328,18 +328,10 @@ function szCanvas(){render();}
 
 // RENDER
 function render(){
-  // Calculate canvas size - works with file://, http://, and any context
-  var sidebar=document.getElementById('sidebar');
-  var toolbar=document.getElementById('toolbar');
-  var statusbar=document.getElementById('statusbar');
-  var sbW=sidebar?sidebar.offsetWidth:230;
-  var tbH=toolbar?toolbar.offsetHeight:42;
-  var stH=statusbar?statusbar.offsetHeight:24;
-  var aW=area.offsetWidth||(window.innerWidth-sbW)||800;
-  var aH=area.offsetHeight||(window.innerHeight-tbH-stH)||600;
-  if(aW<100){aW=window.innerWidth-sbW;}
-  if(aH<100){aH=window.innerHeight-tbH-stH;}
-  if(aW<100)aW=800; if(aH<100)aH=600;
+  // Canvas size: use window dimensions (always available)
+  var aW=window.innerWidth-230;
+  var aH=window.innerHeight-42-24;
+  if(aW<100)aW=800; if(aH<100)aH=500;
   if(gc.width!==aW||gc.height!==aH){gc.width=aW;gc.height=aH;ov.width=aW;ov.height=aH;}
   var W=gc.width,H=gc.height;
   var ds=Math.max(0.1,CELL*ZL);
@@ -620,17 +612,18 @@ function cvtRef(){
   if(!refSrc)return;
   var nc=parseInt(document.getElementById('nc').value);
   var bgt=parseInt(document.getElementById('bg').value);
+
+  // Draw on white bg and black bg to detect alpha
   var tmp=document.createElement('canvas');tmp.width=COLS;tmp.height=ROWS;
   var tx=tmp.getContext('2d');
-  // Draw with white background first, then transparent on top to detect alpha
   tx.fillStyle='#ffffff';tx.fillRect(0,0,COLS,ROWS);
   tx.drawImage(refSrc,0,0,COLS,ROWS);
   var pixW=tx.getImageData(0,0,COLS,ROWS).data;
-  // Also draw on black bg to detect transparency
   tx.fillStyle='#000000';tx.fillRect(0,0,COLS,ROWS);
   tx.drawImage(refSrc,0,0,COLS,ROWS);
   var pixB=tx.getImageData(0,0,COLS,ROWS).data;
 
+  // Build pixel grid and detect transparent pixels
   var pg=[];
   var bgMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
 
@@ -638,63 +631,49 @@ function cvtRef(){
     pg.push([]);
     for(var j=0;j<COLS;j++){
       var idx=(i*COLS+j)*4;
-      // Use white-bg version as the actual color
-      var rgb=[pixW[idx],pixW[idx+1],pixW[idx+2]];
-      pg[i].push(rgb);
-      // Detect transparent pixels: if pixel is white on white-bg AND black on black-bg
-      // then it was originally transparent
-      var onBlack=[pixB[idx],pixB[idx+1],pixB[idx+2]];
-      var isTransparent=(rgb[0]>240&&rgb[1]>240&&rgb[2]>240&&onBlack[0]<15&&onBlack[1]<15&&onBlack[2]<15);
+      var rW=pixW[idx],gW=pixW[idx+1],bW=pixW[idx+2];
+      var rB=pixB[idx],gB=pixB[idx+1],bB=pixB[idx+2];
+      pg[i].push([rW,gW,bW]);
+      // Transparent pixel: white on white bg + black on black bg
+      var isTransparent=(rW>240&&gW>240&&bW>240&&rB<15&&gB<15&&bB<15);
       if(isTransparent){bgMask[i][j]=true;continue;}
-      // Also apply manual threshold if user set it (for JPG without alpha)
-      if(bgt>0&&rgb[0]>=bgt&&rgb[1]>=bgt&&rgb[2]>=bgt){
-        // Mark as candidate bg
-        bgMask[i][j]=true;
-      }
+      if(bgt>0&&rW>=bgt&&gW>=bgt&&bW>=bgt){bgMask[i][j]=true;}
     }
   }
 
-  // If image has transparent pixels, use those as bg mask (ignore threshold)
+  // If has real alpha, use only alpha-detected bg (ignore threshold)
   var hasAlpha=false;
-  for(var i=0;i<ROWS&&!hasAlpha;i++)for(var j=0;j<COLS&&!hasAlpha;j++){
-    var idx=(i*COLS+j)*4;
-    var onBlack2=[pixB[idx],pixB[idx+1],pixB[idx+2]];
-    var onWhite2=[pixW[idx],pixW[idx+1],pixW[idx+2]];
-    if(onWhite2[0]>240&&onBlack2[0]<15)hasAlpha=true;
+  outer: for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++){
+    var idx2=(i*COLS+j)*4;
+    if(pixW[idx2]>240&&pixB[idx2]<15){hasAlpha=true;break outer;}
   }
-
   if(hasAlpha){
-    // Re-build bgMask using only alpha detection
     bgMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
     for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++){
-      var idx=(i*COLS+j)*4;
-      var onBlack3=[pixB[idx],pixB[idx+1],pixB[idx+2]];
-      var onWhite3=[pixW[idx],pixW[idx+1],pixW[idx+2]];
-      if(onWhite3[0]>240&&onWhite3[1]>240&&onWhite3[2]>240&&onBlack3[0]<15&&onBlack3[1]<15&&onBlack3[2]<15)
+      var idx3=(i*COLS+j)*4;
+      if(pixW[idx3]>240&&pixW[idx3+1]>240&&pixW[idx3+2]>240&&pixB[idx3]<15&&pixB[idx3+1]<15&&pixB[idx3+2]<15)
         bgMask[i][j]=true;
     }
   } else if(bgt>0){
-    // JPG: use smarter flood fill from edges only
+    // JPG: flood fill from edges
     var visited=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
     bgMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
     var stk=[];
     for(var ei=0;ei<ROWS;ei++){
-      for(var ej2=0;ej2<2;ej2++){
-        var c2=ej2===0?0:COLS-1;
-        var px2=pg[ei][c2];
-        if(px2[0]>=bgt&&px2[1]>=bgt&&px2[2]>=bgt&&!visited[ei][c2]){
-          visited[ei][c2]=true;stk.push([ei,c2]);
+      [[ei,0],[ei,COLS-1]].forEach(function(pt){
+        var px=pg[pt[0]][pt[1]];
+        if(px[0]>=bgt&&px[1]>=bgt&&px[2]>=bgt&&!visited[pt[0]][pt[1]]){
+          visited[pt[0]][pt[1]]=true;stk.push([pt[0],pt[1]]);
         }
-      }
+      });
     }
     for(var ej=0;ej<COLS;ej++){
-      for(var ei2=0;ei2<2;ei2++){
-        var r2=ei2===0?0:ROWS-1;
-        var px3=pg[r2][ej];
-        if(px3[0]>=bgt&&px3[1]>=bgt&&px3[2]>=bgt&&!visited[r2][ej]){
-          visited[r2][ej]=true;stk.push([r2,ej]);
+      [[0,ej],[ROWS-1,ej]].forEach(function(pt){
+        var px=pg[pt[0]][pt[1]];
+        if(px[0]>=bgt&&px[1]>=bgt&&px[2]>=bgt&&!visited[pt[0]][pt[1]]){
+          visited[pt[0]][pt[1]]=true;stk.push([pt[0],pt[1]]);
         }
-      }
+      });
     }
     while(stk.length){
       var pos=stk.pop();var r3=pos[0],c3=pos[1];
@@ -702,56 +681,444 @@ function cvtRef(){
       var px4=pg[r3][c3];
       if(px4[0]<bgt||px4[1]<bgt||px4[2]<bgt)continue;
       bgMask[r3][c3]=true;
-      if(!visited[r3-1]?.[c3])stk.push([r3-1,c3]);
-      if(!visited[r3+1]?.[c3])stk.push([r3+1,c3]);
-      if(!visited[r3]?.[c3-1])stk.push([r3,c3-1]);
-      if(!visited[r3]?.[c3+1])stk.push([r3,c3+1]);
+      stk.push([r3-1,c3],[r3+1,c3],[r3,c3-1],[r3,c3+1]);
     }
   }
 
-  // Collect foreground pixels
-  var fg=[];
-  for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++)if(!bgMask[i][j])fg.push(pg[i][j]);
-  var src=fg.length>=nc*5?fg:pg.flat();
+  // โ”€โ”€ PRE-PROCESSING: Gaussian Blur (radius 1) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // Blur foreground pixels only to smooth watercolor texture/noise
+  // This helps color clustering find cleaner color groups
+  var blurPg=Array.from({length:ROWS},function(){return Array.from({length:COLS},function(){return [0,0,0];});});
+  var kernel=[0.0625,0.125,0.0625, 0.125,0.25,0.125, 0.0625,0.125,0.0625]; // 3x3 Gaussian
+  var kOff=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,0],[0,1],[1,-1],[1,0],[1,1]];
+  for(var i=0;i<ROWS;i++){
+    for(var j=0;j<COLS;j++){
+      if(bgMask[i][j]){blurPg[i][j]=pg[i][j];continue;}
+      var sr=0,sg=0,sb=0,sw=0;
+      for(var k=0;k<9;k++){
+        var ni=i+kOff[k][0],nj=j+kOff[k][1];
+        if(ni<0||ni>=ROWS||nj<0||nj>=COLS||bgMask[ni][nj])continue;
+        var w=kernel[k];
+        sr+=pg[ni][nj][0]*w; sg+=pg[ni][nj][1]*w; sb+=pg[ni][nj][2]*w; sw+=w;
+      }
+      if(sw>0)blurPg[i][j]=[Math.round(sr/sw),Math.round(sg/sw),Math.round(sb/sw)];
+      else blurPg[i][j]=pg[i][j];
+    }
+  }
+  // Use blurred pixels for palette building (but keep original pg for outline detection)
 
-  var ctrs=medCut(src,nc);
-  palette=ctrs.map(function(c){return r2h(Math.round(c[0]),Math.round(c[1]),Math.round(c[2]));});
+  // โ”€โ”€ OUTLINE DETECTION โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // Strict: only near-black pixels (lum<40) next to much brighter pixels
+  var OUTLINE_THRESH=40;  // very dark only
+  var CONTRAST_MIN=80;    // must be much brighter than outline
+  var outlineMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
+  var outlineColor=[-1,-1,-1];
+
+  var outlinePx=[];
+  for(var i=1;i<ROWS-1;i++){
+    for(var j=1;j<COLS-1;j++){
+      if(bgMask[i][j])continue;
+      var px=pg[i][j];
+      var lum=0.299*px[0]+0.587*px[1]+0.114*px[2];
+      if(lum<OUTLINE_THRESH){
+        // Must be adjacent to a MUCH brighter foreground pixel
+        var neighbors=[[i-1,j],[i+1,j],[i,j-1],[i,j+1],
+                        [i-1,j-1],[i-1,j+1],[i+1,j-1],[i+1,j+1]];
+        var brightCount=0;
+        for(var n=0;n<neighbors.length;n++){
+          var nr=neighbors[n][0],nc2=neighbors[n][1];
+          if(nr<0||nr>=ROWS||nc2<0||nc2>=COLS)continue;
+          if(bgMask[nr][nc2])continue;
+          var npx=pg[nr][nc2];
+          var nlum=0.299*npx[0]+0.587*npx[1]+0.114*npx[2];
+          if(nlum-lum>CONTRAST_MIN)brightCount++;
+        }
+        // Need at least 2 bright neighbors to be sure it's outline (not noise)
+        if(brightCount>=2){outlineMask[i][j]=true;outlinePx.push(px);}
+      }
+    }
+  }
+
+  // Average outline color
+  if(outlinePx.length>10){
+    var os=[0,0,0];
+    for(var k=0;k<outlinePx.length;k++){os[0]+=outlinePx[k][0];os[1]+=outlinePx[k][1];os[2]+=outlinePx[k][2];}
+    outlineColor=[Math.round(os[0]/outlinePx.length),Math.round(os[1]/outlinePx.length),Math.round(os[2]/outlinePx.length)];
+  }
+  var hasOutline=outlinePx.length>10;
+
+  // โ”€โ”€ COLOR PALETTE โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // nc = user's Max Colors setting = STRICT HARD LIMIT
+  // Never exceed nc. Only auto-boost for small images when user hasn't manually lowered nc.
+  var totalStitches=COLS*ROWS;
+  var autoNc=nc; // always start from user value
+  if(nc>=20){
+    // Only auto-boost if user left nc at a high default
+    if(totalStitches<15000)autoNc=Math.min(nc,autoNc+4);
+    if(totalStitches<8000) autoNc=Math.min(nc,autoNc+2);
+  }
+  // Hard cap: NEVER exceed what user set
+  autoNc=Math.min(autoNc,nc);
+  // If outline takes 1 slot: disable outline if nc<=2
+  if(hasOutline&&nc<=2){hasOutline=false;}
+
+  // Collect fg pixels from BLURRED image (skip edge-bleed zone)
+  var fg=[];
+  for(var i=0;i<ROWS;i++){
+    for(var j=0;j<COLS;j++){
+      if(bgMask[i][j]||outlineMask[i][j])continue;
+      var nearBg=false;
+      if(i>0&&bgMask[i-1][j])nearBg=true;
+      else if(i<ROWS-1&&bgMask[i+1][j])nearBg=true;
+      else if(j>0&&bgMask[i][j-1])nearBg=true;
+      else if(j<COLS-1&&bgMask[i][j+1])nearBg=true;
+      if(!nearBg)fg.push(blurPg[i][j]);
+    }
+  }
+  if(fg.length<palNc*8){
+    fg=[];
+    for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++){
+      if(!bgMask[i][j]&&!outlineMask[i][j])fg.push(blurPg[i][j]);
+    }
+  }
+  if(fg.length<10)fg=blurPg.flat().filter(function(_,k){
+    var r2=Math.floor(k/COLS),c2=k%COLS;return !bgMask[r2][c2];
+  });
+
+  // Outline counts as 1 of the nc slots
+  var palNc=hasOutline?Math.max(1,autoNc-1):autoNc;
+  palNc=Math.max(1,palNc);
+  var ctrs=medCut(fg,palNc);
+  var fgPalette=ctrs.map(function(c){return r2h(Math.round(c[0]),Math.round(c[1]),Math.round(c[2]));});
+
+  // Outline = first slot (counts toward nc total)
+  if(hasOutline){
+    var outlineHex=r2h(outlineColor[0],outlineColor[1],outlineColor[2]);
+    palette=[outlineHex].concat(fgPalette);
+  } else {
+    palette=fgPalette;
+  }
+  // Ensure we never exceed nc
+  if(palette.length>nc)palette=palette.slice(0,nc);
+
   pushH('Convert Image');
-  grid=pg.map(function(row,i){return row.map(function(px,j){
+
+  // โ”€โ”€ STEP 1: Map ORIGINAL pixels to palette (not blurred - keeps detail) โ”€โ”€
+  // Blur was used for palette building only, not for final mapping
+  var rawGrid=pg.map(function(row,i){return row.map(function(px,j){
     if(bgMask[i][j])return -1;
+    if(hasOutline&&outlineMask[i][j])return 0;
     return nHex(px,palette);
   });});
+
+  // โ”€โ”€ STEP 2: Smooth transitions (anti-blockiness) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // Replace isolated single-pixel color "specks" with neighbor's color
+  // This eliminates noise without dithering
+  var smoothGrid=rawGrid.map(function(row){return row.slice();});
+
+  for(var pass=0;pass<2;pass++){
+    for(var i=1;i<ROWS-1;i++){
+      for(var j=1;j<COLS-1;j++){
+        var ci=smoothGrid[i][j];
+        if(ci<0)continue;
+
+        // Count neighbors with same color
+        var nbrs=[smoothGrid[i-1][j],smoothGrid[i+1][j],
+                  smoothGrid[i][j-1],smoothGrid[i][j+1]];
+        var sameCount=nbrs.filter(function(n){return n===ci;}).length;
+
+        // Isolated pixel (0 same neighbors) = noise โ’ replace with majority neighbor
+        if(sameCount===0){
+          var freq={};
+          nbrs.forEach(function(n){if(n>=0){freq[n]=(freq[n]||0)+1;}});
+          var best=ci,bestN=0;
+          Object.keys(freq).forEach(function(k){if(freq[k]>bestN){bestN=freq[k];best=parseInt(k);}});
+          smoothGrid[i][j]=best;
+        }
+      }
+    }
+  }
+
+  // โ”€โ”€ STEP 2.5: Soft Floyd-Steinberg Dithering (25% weight) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // Diffuse quantization error to smooth color banding
+  // Low weight (0.25) prevents confetti stitches while smoothing transitions
+  var DITHER_W=0.25;
+  var errBuf=Array.from({length:ROWS},function(){return Array.from({length:COLS},function(){return [0,0,0];});});
+  var ditherGrid=smoothGrid.map(function(row){return row.slice();});
+
+  for(var i=0;i<ROWS;i++){
+    var leftToRight=(i%2===0);
+    var jStart=leftToRight?0:COLS-1;
+    var jEnd=leftToRight?COLS:-1;
+    var jStep=leftToRight?1:-1;
+
+    for(var j=jStart;j!==jEnd;j+=jStep){
+      var ci=ditherGrid[i][j];
+      if(ci<0)continue; // skip bg
+
+      // Get ORIGINAL pixel + accumulated error (not blurred - keeps sharp detail)
+      var origR=pg[i][j][0]+errBuf[i][j][0];
+      var origG=pg[i][j][1]+errBuf[i][j][1];
+      var origB=pg[i][j][2]+errBuf[i][j][2];
+      origR=Math.max(0,Math.min(255,origR));
+      origG=Math.max(0,Math.min(255,origG));
+      origB=Math.max(0,Math.min(255,origB));
+
+      // Find closest palette color to error-adjusted pixel
+      var newCi=nHex([origR,origG,origB],palette);
+      if(hasOutline&&outlineMask[i][j])newCi=0;
+      ditherGrid[i][j]=newCi;
+
+      // Calculate quantization error
+      var palRgb=h2r(palette[newCi])||[origR,origG,origB];
+      var errR=(origR-palRgb[0])*DITHER_W;
+      var errG=(origG-palRgb[1])*DITHER_W;
+      var errB=(origB-palRgb[2])*DITHER_W;
+
+      // Diffuse error to neighbors (Floyd-Steinberg pattern)
+      // Right: 7/16, Down-Left: 3/16, Down: 5/16, Down-Right: 1/16
+      var jR=j+jStep; // right (in scan direction)
+      var jL=j-jStep; // left
+      if(jR>=0&&jR<COLS&&ditherGrid[i][jR]>=0){
+        errBuf[i][jR][0]+=errR*7/16;
+        errBuf[i][jR][1]+=errG*7/16;
+        errBuf[i][jR][2]+=errB*7/16;
+      }
+      if(i+1<ROWS){
+        if(jL>=0&&jL<COLS&&!bgMask[i+1][jL]){
+          errBuf[i+1][jL][0]+=errR*3/16;
+          errBuf[i+1][jL][1]+=errG*3/16;
+          errBuf[i+1][jL][2]+=errB*3/16;
+        }
+        if(!bgMask[i+1][j]){
+          errBuf[i+1][j][0]+=errR*5/16;
+          errBuf[i+1][j][1]+=errG*5/16;
+          errBuf[i+1][j][2]+=errB*5/16;
+        }
+        if(jR>=0&&jR<COLS&&!bgMask[i+1][jR]){
+          errBuf[i+1][jR][0]+=errR*1/16;
+          errBuf[i+1][jR][1]+=errG*1/16;
+          errBuf[i+1][jR][2]+=errB*1/16;
+        }
+      }
+    }
+  }
+  // Use dithered result as input to color family protection
+  var smoothGrid=ditherGrid;
+
+  // โ”€โ”€ STEP 3: Color family protection โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // Prevent color contamination: if a pixel's true color is in one hue family,
+  // only allow replacements from the same family
+  // Build hue families from palette
+  function getHue(hex){
+    var rgb=h2r(hex);if(!rgb)return 0;
+    var r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
+    var max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+    if(d===0)return -1; // achromatic
+    var h;
+    if(max===r)h=(g-b)/d+(g<b?6:0);
+    else if(max===g)h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    return h*60;
+  }
+  function getSat(hex){
+    var rgb=h2r(hex);if(!rgb)return 0;
+    var r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
+    var max=Math.max(r,g,b),min=Math.min(r,g,b);
+    return max===0?0:(max-min)/max;
+  }
+
+  // Classify each palette color into hue family
+  var palFamily=palette.map(function(hex,i){
+    if(i===0&&hasOutline)return 'outline';
+    var sat=getSat(hex);
+    if(sat<0.15)return 'neutral'; // gray/white/beige
+    var hue=getHue(hex);
+    if(hue<0)return 'neutral';
+    if(hue>=300||hue<20)return 'red-pink';   // red, pink, magenta
+    if(hue>=20&&hue<50)return 'orange-brown';
+    if(hue>=50&&hue<80)return 'yellow';
+    if(hue>=80&&hue<165)return 'green';
+    if(hue>=165&&hue<255)return 'blue-teal';
+    if(hue>=255&&hue<300)return 'purple-violet';
+    return 'neutral';
+  });
+
+  // For each pixel, check if neighbors are all from same family
+  // If so, don't allow cross-family contamination
+  var finalGrid=smoothGrid.map(function(row){return row.slice();});
+  for(var i=1;i<ROWS-1;i++){
+    for(var j=1;j<COLS-1;j++){
+      var ci=finalGrid[i][j];
+      if(ci<0||ci>=palette.length)continue;
+      var myFam=palFamily[ci];
+      if(myFam==='neutral'||myFam==='outline')continue;
+
+      // Look at 3x3 neighborhood
+      var fams={};
+      for(var di=-2;di<=2;di++){
+        for(var dj=-2;dj<=2;dj++){
+          var ni=i+di,nj=j+dj;
+          if(ni<0||ni>=ROWS||nj<0||nj>=COLS)continue;
+          var nc2=finalGrid[ni][nj];
+          if(nc2>=0&&nc2<palette.length){
+            var f=palFamily[nc2];
+            fams[f]=(fams[f]||0)+1;
+          }
+        }
+      }
+
+      // If this pixel's family is a minority (1 pixel) in a neighborhood
+      // dominated by a DIFFERENT non-neutral family โ’ contamination
+      var myCount=fams[myFam]||0;
+      var totalColored=Object.keys(fams).reduce(function(s,k){
+        return k==='neutral'?s:s+(fams[k]||0);
+      },0);
+
+      if(myCount<=2&&totalColored>=8){
+        // Find dominant family color
+        var domFam='neutral',domCount=0;
+        Object.keys(fams).forEach(function(f){
+          if(f!=='neutral'&&f!==myFam&&(fams[f]||0)>domCount){
+            domCount=fams[f];domFam=f;
+          }
+        });
+        // Only correct if clearly wrong family (not just neighbor color)
+        if(domCount>=6&&domFam!=='neutral'){
+          // Find closest palette color in dominant family
+          var best=ci;
+          var lab1=rgb2lab.apply(null,h2r(palette[ci])||[128,128,128]);
+          var bd=1e9;
+          for(var pi=0;pi<palette.length;pi++){
+            if(palFamily[pi]!==domFam)continue;
+            var lab2=rgb2lab.apply(null,h2r(palette[pi])||[128,128,128]);
+            var dd=Math.pow(lab1[0]-lab2[0],2)+Math.pow(lab1[1]-lab2[1],2)+Math.pow(lab1[2]-lab2[2],2);
+            if(dd<bd){bd=dd;best=pi;}
+          }
+          finalGrid[i][j]=best;
+        }
+      }
+    }
+  }
+
+  grid=finalGrid;
   SI=0;updPal();updSt();szCanvas();VX=0;VY=0;fitZoom();
 }
 
+// RGB to Lab conversion for perceptual color distance
+function rgb2lab(r,g,b){
+  // sRGB to linear
+  function lin(v){v/=255;return v>0.04045?Math.pow((v+0.055)/1.055,2.4):v/12.92;}
+  var lr=lin(r),lg=lin(g),lb=lin(b);
+  // Linear RGB to XYZ (D65)
+  var x=(lr*0.4124+lg*0.3576+lb*0.1805)/0.9505;
+  var y=(lr*0.2126+lg*0.7152+lb*0.0722)/1.0000;
+  var z=(lr*0.0193+lg*0.1192+lb*0.9505)/1.0888;
+  function f(t){return t>0.008856?Math.pow(t,1/3):7.787*t+16/116;}
+  var fx=f(x),fy=f(y),fz=f(z);
+  return[116*fy-16, 500*(fx-fy), 200*(fy-fz)];
+}
+function lab2rgb(L,a,b){
+  var fy=(L+16)/116,fx=a/500+fy,fz=fy-b/200;
+  function f(t){return t>0.206897?t*t*t:(t-16/116)/7.787;}
+  var x=f(fx)*0.9505,y=f(fy),z=f(fz)*1.0888;
+  var r= x* 3.2406+y*-1.5372+z*-0.4986;
+  var g= x*-0.9689+y* 1.8758+z* 0.0415;
+  var bv=x* 0.0557+y*-0.2040+z* 1.0570;
+  function srgb(v){v=Math.max(0,Math.min(1,v));return Math.round((v>0.0031308?1.055*Math.pow(v,1/2.4)-0.055:12.92*v)*255);}
+  return[srgb(r),srgb(g),srgb(bv)];
+}
+
 function medCut(pixels,k){
-  function avg(pts){if(!pts.length)return[128,128,128];var s=[0,0,0];for(var i=0;i<pts.length;i++){s[0]+=pts[i][0];s[1]+=pts[i][1];s[2]+=pts[i][2];}return[s[0]/pts.length,s[1]/pts.length,s[2]/pts.length];}
+  // Convert all pixels to Lab space for perceptual clustering
+  var labPix=pixels.map(function(p){return rgb2lab(p[0],p[1],p[2]);});
+
+  function avg(pts){
+    if(!pts.length)return[50,0,0];
+    var s=[0,0,0];
+    for(var i=0;i<pts.length;i++){s[0]+=pts[i][0];s[1]+=pts[i][1];s[2]+=pts[i][2];}
+    return[s[0]/pts.length,s[1]/pts.length,s[2]/pts.length];
+  }
   function cut(pts,d){
     if(d===0||pts.length===0)return[avg(pts)];
-    var mn=[255,255,255],mx=[0,0,0];
-    for(var i=0;i<pts.length;i++){for(var j=0;j<3;j++){if(pts[i][j]<mn[j])mn[j]=pts[i][j];if(pts[i][j]>mx[j])mx[j]=pts[i][j];}}
+    var mn=[999,999,999],mx=[-999,-999,-999];
+    for(var i=0;i<pts.length;i++){
+      for(var j=0;j<3;j++){
+        if(pts[i][j]<mn[j])mn[j]=pts[i][j];
+        if(pts[i][j]>mx[j])mx[j]=pts[i][j];
+      }
+    }
     var rng=[mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2]];
+    // Weight L channel less (chroma more important for color distinction)
+    rng[0]*=0.7;
     var ch=rng[0]>=rng[1]&&rng[0]>=rng[2]?0:rng[1]>=rng[2]?1:2;
-    var s=pts.slice().sort(function(a,b){return a[ch]-b[ch];});
-    var mid=Math.floor(s.length/2);
-    return cut(s.slice(0,mid),d-1).concat(cut(s.slice(mid),d-1));
+    var sorted=pts.slice().sort(function(a,b){return a[ch]-b[ch];});
+    var mid=Math.floor(sorted.length/2);
+    return cut(sorted.slice(0,mid),d-1).concat(cut(sorted.slice(mid),d-1));
   }
-  var samp=pixels.length>4000?pixels.filter(function(_,i){return i%Math.floor(pixels.length/4000)===0;}):pixels;
+
+  var samp=labPix.length>4000?labPix.filter(function(_,i){
+    return i%Math.floor(labPix.length/4000)===0;
+  }):labPix;
+
   var dep=Math.ceil(Math.log2(Math.max(k,2)));
   var ctrs=cut(samp.slice(),dep);
+
+  // Merge down to k centers
   while(ctrs.length>k){
     var md=1e9,mi=0,mj=1;
-    for(var i=0;i<ctrs.length;i++)for(var j=i+1;j<ctrs.length;j++){var dd=Math.pow(ctrs[i][0]-ctrs[j][0],2)+Math.pow(ctrs[i][1]-ctrs[j][1],2)+Math.pow(ctrs[i][2]-ctrs[j][2],2);if(dd<md){md=dd;mi=i;mj=j;}}
-    var mg=[(ctrs[mi][0]+ctrs[mj][0])/2,(ctrs[mi][1]+ctrs[mj][1])/2,(ctrs[mi][2]+ctrs[mj][2])/2];
-    var nc2=[];for(var i=0;i<ctrs.length;i++)if(i!==mi&&i!==mj)nc2.push(ctrs[i]);nc2.push(mg);ctrs=nc2;
+    for(var i=0;i<ctrs.length;i++){
+      for(var j=i+1;j<ctrs.length;j++){
+        var dd=Math.pow(ctrs[i][0]-ctrs[j][0],2)+
+               Math.pow(ctrs[i][1]-ctrs[j][1],2)+
+               Math.pow(ctrs[i][2]-ctrs[j][2],2);
+        if(dd<md){md=dd;mi=i;mj=j;}
+      }
+    }
+    var mg=[(ctrs[mi][0]+ctrs[mj][0])/2,
+            (ctrs[mi][1]+ctrs[mj][1])/2,
+            (ctrs[mi][2]+ctrs[mj][2])/2];
+    var nc2=[];
+    for(var i=0;i<ctrs.length;i++)if(i!==mi&&i!==mj)nc2.push(ctrs[i]);
+    nc2.push(mg);
+    ctrs=nc2;
   }
-  for(var it=0;it<15;it++){
+
+  // K-means refinement in Lab space
+  for(var it=0;it<25;it++){
     var sm=Array.from({length:ctrs.length},function(){return[0,0,0,0];});
-    for(var i=0;i<samp.length;i++){var ci=nRgb(samp[i],ctrs);sm[ci][0]+=samp[i][0];sm[ci][1]+=samp[i][1];sm[ci][2]+=samp[i][2];sm[ci][3]++;}
-    ctrs=sm.map(function(s,i){return s[3]?[s[0]/s[3],s[1]/s[3],s[2]/s[3]]:ctrs[i];});
+    for(var i=0;i<samp.length;i++){
+      var best=0,bd=1e9;
+      for(var j=0;j<ctrs.length;j++){
+        var dd=Math.pow(samp[i][0]-ctrs[j][0],2)+
+               Math.pow(samp[i][1]-ctrs[j][1],2)+
+               Math.pow(samp[i][2]-ctrs[j][2],2);
+        if(dd<bd){bd=dd;best=j;}
+      }
+      sm[best][0]+=samp[i][0];sm[best][1]+=samp[i][1];
+      sm[best][2]+=samp[i][2];sm[best][3]++;
+    }
+    ctrs=sm.map(function(s2,i){
+      return s2[3]?[s2[0]/s2[3],s2[1]/s2[3],s2[2]/s2[3]]:ctrs[i];
+    });
   }
-  return ctrs;
+
+  // Convert Lab centers back to RGB
+  return ctrs.map(function(c){return lab2rgb(c[0],c[1],c[2]);});
 }
+
+// nRgb now uses Lab distance for perceptually correct matching
+function nRgb(px,pal){
+  var lab=rgb2lab(px[0],px[1],px[2]);
+  var best=0,bd=1e9;
+  for(var i=0;i<pal.length;i++){
+    var pl=rgb2lab(pal[i][0],pal[i][1],pal[i][2]);
+    var d=Math.pow(lab[0]-pl[0],2)+Math.pow(lab[1]-pl[1],2)+Math.pow(lab[2]-pl[2],2);
+    if(d<bd){bd=d;best=i;}
+  }
+  return best;
+}
+
 
 // STATUS
 function updSt(){
@@ -1289,31 +1656,7 @@ function genMockupPrompt(){
   document.getElementById('mockup-copy-btn').disabled=true;
 
   // Call Claude API to generate an optimized Gemini image prompt
-  var userMsg='I have a cross stitch pattern with these details:
-'+
-    '- Size: '+COLS+' x '+ROWS+' stitches
-'+
-    '- Finished size: '+wIn+'" x '+hIn+'" on '+fabricName+'
-'+
-    '- Number of colors: '+nc+' DMC thread colors
-'+
-    '- Dominant colors: '+colorList+'
-
-'+
-    'Generate TWO things:
-'+
-    '1. A short English image generation prompt (2-3 sentences) for Google Gemini/Imagine to create a realistic mockup photo of this finished cross stitch embroidery, displayed in a round wooden hoop on a clean background, showing the Aida fabric texture and X-shaped stitches. Include a placeholder [SUBJECT] where the user should describe their design.
-'+
-    '2. The same prompt but formatted for Midjourney with --ar 1:1 --style raw --q 2
-
-'+
-    'Format your response exactly as:
-'+
-    'GEMINI:
-[prompt here]
-
-MIDJOURNEY:
-[prompt here]';
+  var userMsg='I have a cross stitch pattern with these details:\n- Size: '+COLS+' x '+ROWS+' stitches\n- Finished size: '+wIn+'" x '+hIn+'" on '+fabricName+'\n- Number of colors: '+nc+' DMC thread colors\n- Dominant colors: '+colorList+'\n\nGenerate TWO things:\n1. A short English image generation prompt (2-3 sentences) for Google Gemini/Imagine to create a realistic mockup photo of this finished cross stitch embroidery, displayed in a round wooden hoop on a clean background, showing the Aida fabric texture and X-shaped stitches. Include a placeholder [SUBJECT] where the user should describe their design.\n2. The same prompt but formatted for Midjourney with --ar 1:1 --style raw --q 2\n\nFormat your response exactly as:\nGEMINI:\n[prompt here]\n\nMIDJOURNEY:\n[prompt here]';
 
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
@@ -1332,21 +1675,7 @@ MIDJOURNEY:
   })
   .catch(function(err){
     // Fallback to local prompt if API fails
-    var fallback=
-'GEMINI:
-'+
-'A professional product photo of a finished cross stitch embroidery showing [SUBJECT], '+
-'stitched with '+colorList.split(',').slice(0,3).join(',').toLowerCase()+' DMC threads, '+
-'displayed in a round wooden hoop on white Aida fabric ('+fabricName+'), '+
-COLS+'x'+ROWS+' stitches, '+wIn+'" x '+hIn+'", '+
-'soft natural lighting, close-up shot showing fabric texture and X-shaped stitches clearly, 8k photo.
-
-'+
-'MIDJOURNEY:
-'+
-'/imagine prompt: finished cross stitch embroidery in wooden hoop, [SUBJECT] design, '+
-colorList.split(',').slice(0,3).join(',').toLowerCase()+' thread colors, white Aida fabric, '+
-'product photography, soft lighting, close up, realistic --ar 1:1 --style raw --q 2';
+    var fallback='GEMINI:\n'+'A professional product photo of a finished cross stitch embroidery showing [SUBJECT], '+'stitched with '+colorList.split(',').slice(0,3).join(',').toLowerCase()+' DMC threads, '+'displayed in a round wooden hoop on white Aida fabric ('+fabricName+'), '+COLS+'x'+ROWS+' stitches, '+wIn+'" x '+hIn+'", '+'soft natural lighting, close-up shot showing fabric texture and X-shaped stitches clearly, 8k photo.\n\n'+'MIDJOURNEY:\n'+'/imagine prompt: finished cross stitch embroidery in wooden hoop, [SUBJECT] design, '+colorList.split(',').slice(0,3).join(',').toLowerCase()+' thread colors, white Aida fabric, '+'product photography, soft lighting, close up, realistic --ar 1:1 --style raw --q 2';
     txt.textContent=fallback;
     document.getElementById('mockup-copy-btn').disabled=false;
   });
@@ -1365,8 +1694,7 @@ function copyMockup(){
 function openMidjourney(){window.open('https://www.midjourney.com','_blank');}
 function openGemini(){
   var t=document.getElementById('mockup-text').textContent;
-  var geminiPart=t.split('MIDJOURNEY:')[0].replace('GEMINI:
-','').trim();
+  var geminiPart=t.split('MIDJOURNEY:')[0].replace('GEMINI:\n','').trim();
   window.open('https://gemini.google.com/app?q='+encodeURIComponent('Generate this image: '+geminiPart),'_blank');
 }
 
@@ -1425,11 +1753,7 @@ COLS+'x'+ROWS+' stitches, professional product photography, '+
 'soft lighting, close up, fabric texture visible, '+
 'realistic photo --ar 1:1 --style raw --q 2';
 
-  document.getElementById('mockup-text').textContent='โ”€โ”€ General (DALL-E / Gemini / Stable Diffusion) โ”€โ”€
-'+prompt+'
-
-โ”€โ”€ Midjourney โ”€โ”€
-'+promptMJ;
+  document.getElementById('mockup-text').textContent='โ”€โ”€ General (DALL-E / Gemini / Stable Diffusion) โ”€โ”€\n'+prompt+'\n\nโ”€โ”€ Midjourney โ”€โ”€\n'+promptMJ;
   document.getElementById('mockup-box').style.display='block';
 }
 
@@ -1447,8 +1771,7 @@ function openMidjourney(){
 }
 function openGemini(){
   var t=document.getElementById('mockup-text').textContent;
-  var prompt=t.split('โ”€โ”€ Midjourney โ”€โ”€')[0].replace('โ”€โ”€ General (DALL-E / Gemini / Stable Diffusion) โ”€โ”€
-','').trim();
+  var prompt=t.split('โ”€โ”€ Midjourney โ”€โ”€')[0].replace('โ”€โ”€ General (DALL-E / Gemini / Stable Diffusion) โ”€โ”€\n','').trim();
   window.open('https://gemini.google.com/app?q='+encodeURIComponent('Create an image: '+prompt),'_blank');
 }
 
@@ -1457,36 +1780,16 @@ function boot(){
   grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
   updSt();
   updPal();
-  // render() will auto-resize canvas on first call
-  // Call multiple times to ensure canvas gets sized
+  var w=window.innerWidth-230;
+  var h=window.innerHeight-66;
+  if(w<100)w=800; if(h<100)h=500;
+  ZL=Math.min(w/(COLS*CELL),h/(ROWS*CELL));
+  ZL=Math.max(0.05,ZL);
+  document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';
   render();
-  setTimeout(function(){
-    var sidebar=document.getElementById('sidebar');
-    var sbW=sidebar?sidebar.offsetWidth:230;
-    var w=area.offsetWidth||(window.innerWidth-sbW)||800;
-    var h=area.offsetHeight||(window.innerHeight-66)||600;
-    ZL=Math.min(w/(COLS*CELL),h/(ROWS*CELL));
-    ZL=Math.max(0.05,ZL);
-    document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';
-    render();
-  },100);
-  setTimeout(function(){
-    var sidebar=document.getElementById('sidebar');
-    var sbW=sidebar?sidebar.offsetWidth:230;
-    var w=area.offsetWidth||(window.innerWidth-sbW)||800;
-    var h=area.offsetHeight||(window.innerHeight-66)||600;
-    ZL=Math.min(w/(COLS*CELL),h/(ROWS*CELL));
-    ZL=Math.max(0.05,ZL);
-    document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';
-    render();
-  },800);
   window.addEventListener('resize',function(){render();});
 }
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded', boot);
-} else {
-  setTimeout(boot, 0);
-}
+window.addEventListener('load', boot);
 </script>
 </body>
 </html>
