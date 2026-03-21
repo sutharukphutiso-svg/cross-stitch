@@ -612,17 +612,18 @@ function cvtRef(){
   if(!refSrc)return;
   var nc=parseInt(document.getElementById('nc').value);
   var bgt=parseInt(document.getElementById('bg').value);
+
+  // Draw on white bg and black bg to detect alpha
   var tmp=document.createElement('canvas');tmp.width=COLS;tmp.height=ROWS;
   var tx=tmp.getContext('2d');
-  // Draw with white background first, then transparent on top to detect alpha
   tx.fillStyle='#ffffff';tx.fillRect(0,0,COLS,ROWS);
   tx.drawImage(refSrc,0,0,COLS,ROWS);
   var pixW=tx.getImageData(0,0,COLS,ROWS).data;
-  // Also draw on black bg to detect transparency
   tx.fillStyle='#000000';tx.fillRect(0,0,COLS,ROWS);
   tx.drawImage(refSrc,0,0,COLS,ROWS);
   var pixB=tx.getImageData(0,0,COLS,ROWS).data;
 
+  // Build pixel grid and detect transparent pixels
   var pg=[];
   var bgMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
 
@@ -630,63 +631,49 @@ function cvtRef(){
     pg.push([]);
     for(var j=0;j<COLS;j++){
       var idx=(i*COLS+j)*4;
-      // Use white-bg version as the actual color
-      var rgb=[pixW[idx],pixW[idx+1],pixW[idx+2]];
-      pg[i].push(rgb);
-      // Detect transparent pixels: if pixel is white on white-bg AND black on black-bg
-      // then it was originally transparent
-      var onBlack=[pixB[idx],pixB[idx+1],pixB[idx+2]];
-      var isTransparent=(rgb[0]>240&&rgb[1]>240&&rgb[2]>240&&onBlack[0]<15&&onBlack[1]<15&&onBlack[2]<15);
+      var rW=pixW[idx],gW=pixW[idx+1],bW=pixW[idx+2];
+      var rB=pixB[idx],gB=pixB[idx+1],bB=pixB[idx+2];
+      pg[i].push([rW,gW,bW]);
+      // Transparent pixel: white on white bg + black on black bg
+      var isTransparent=(rW>240&&gW>240&&bW>240&&rB<15&&gB<15&&bB<15);
       if(isTransparent){bgMask[i][j]=true;continue;}
-      // Also apply manual threshold if user set it (for JPG without alpha)
-      if(bgt>0&&rgb[0]>=bgt&&rgb[1]>=bgt&&rgb[2]>=bgt){
-        // Mark as candidate bg
-        bgMask[i][j]=true;
-      }
+      if(bgt>0&&rW>=bgt&&gW>=bgt&&bW>=bgt){bgMask[i][j]=true;}
     }
   }
 
-  // If image has transparent pixels, use those as bg mask (ignore threshold)
+  // If has real alpha, use only alpha-detected bg (ignore threshold)
   var hasAlpha=false;
-  for(var i=0;i<ROWS&&!hasAlpha;i++)for(var j=0;j<COLS&&!hasAlpha;j++){
-    var idx=(i*COLS+j)*4;
-    var onBlack2=[pixB[idx],pixB[idx+1],pixB[idx+2]];
-    var onWhite2=[pixW[idx],pixW[idx+1],pixW[idx+2]];
-    if(onWhite2[0]>240&&onBlack2[0]<15)hasAlpha=true;
+  outer: for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++){
+    var idx2=(i*COLS+j)*4;
+    if(pixW[idx2]>240&&pixB[idx2]<15){hasAlpha=true;break outer;}
   }
-
   if(hasAlpha){
-    // Re-build bgMask using only alpha detection
     bgMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
     for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++){
-      var idx=(i*COLS+j)*4;
-      var onBlack3=[pixB[idx],pixB[idx+1],pixB[idx+2]];
-      var onWhite3=[pixW[idx],pixW[idx+1],pixW[idx+2]];
-      if(onWhite3[0]>240&&onWhite3[1]>240&&onWhite3[2]>240&&onBlack3[0]<15&&onBlack3[1]<15&&onBlack3[2]<15)
+      var idx3=(i*COLS+j)*4;
+      if(pixW[idx3]>240&&pixW[idx3+1]>240&&pixW[idx3+2]>240&&pixB[idx3]<15&&pixB[idx3+1]<15&&pixB[idx3+2]<15)
         bgMask[i][j]=true;
     }
   } else if(bgt>0){
-    // JPG: use smarter flood fill from edges only
+    // JPG: flood fill from edges
     var visited=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
     bgMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
     var stk=[];
     for(var ei=0;ei<ROWS;ei++){
-      for(var ej2=0;ej2<2;ej2++){
-        var c2=ej2===0?0:COLS-1;
-        var px2=pg[ei][c2];
-        if(px2[0]>=bgt&&px2[1]>=bgt&&px2[2]>=bgt&&!visited[ei][c2]){
-          visited[ei][c2]=true;stk.push([ei,c2]);
+      [[ei,0],[ei,COLS-1]].forEach(function(pt){
+        var px=pg[pt[0]][pt[1]];
+        if(px[0]>=bgt&&px[1]>=bgt&&px[2]>=bgt&&!visited[pt[0]][pt[1]]){
+          visited[pt[0]][pt[1]]=true;stk.push([pt[0],pt[1]]);
         }
-      }
+      });
     }
     for(var ej=0;ej<COLS;ej++){
-      for(var ei2=0;ei2<2;ei2++){
-        var r2=ei2===0?0:ROWS-1;
-        var px3=pg[r2][ej];
-        if(px3[0]>=bgt&&px3[1]>=bgt&&px3[2]>=bgt&&!visited[r2][ej]){
-          visited[r2][ej]=true;stk.push([r2,ej]);
+      [[0,ej],[ROWS-1,ej]].forEach(function(pt){
+        var px=pg[pt[0]][pt[1]];
+        if(px[0]>=bgt&&px[1]>=bgt&&px[2]>=bgt&&!visited[pt[0]][pt[1]]){
+          visited[pt[0]][pt[1]]=true;stk.push([pt[0],pt[1]]);
         }
-      }
+      });
     }
     while(stk.length){
       var pos=stk.pop();var r3=pos[0],c3=pos[1];
@@ -694,25 +681,82 @@ function cvtRef(){
       var px4=pg[r3][c3];
       if(px4[0]<bgt||px4[1]<bgt||px4[2]<bgt)continue;
       bgMask[r3][c3]=true;
-      if(!visited[r3-1]?.[c3])stk.push([r3-1,c3]);
-      if(!visited[r3+1]?.[c3])stk.push([r3+1,c3]);
-      if(!visited[r3]?.[c3-1])stk.push([r3,c3-1]);
-      if(!visited[r3]?.[c3+1])stk.push([r3,c3+1]);
+      stk.push([r3-1,c3],[r3+1,c3],[r3,c3-1],[r3,c3+1]);
     }
   }
 
-  // Collect foreground pixels
-  var fg=[];
-  for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++)if(!bgMask[i][j])fg.push(pg[i][j]);
-  var src=fg.length>=nc*5?fg:pg.flat();
+  // โ”€โ”€ OUTLINE DETECTION โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // Detect dark outline pixels: dark pixels adjacent to non-dark pixels
+  var OUTLINE_THRESH=60; // pixel is "dark" if all channels < this
+  var outlineMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
+  var outlineColor=[-1,-1,-1]; // will store avg outline color
 
-  var ctrs=medCut(src,nc);
-  palette=ctrs.map(function(c){return r2h(Math.round(c[0]),Math.round(c[1]),Math.round(c[2]));});
+  var outlinePx=[];
+  for(var i=1;i<ROWS-1;i++){
+    for(var j=1;j<COLS-1;j++){
+      if(bgMask[i][j])continue;
+      var px=pg[i][j];
+      var lum=0.299*px[0]+0.587*px[1]+0.114*px[2];
+      if(lum<OUTLINE_THRESH){
+        // Check if adjacent to a significantly lighter pixel
+        var neighbors=[[i-1,j],[i+1,j],[i,j-1],[i,j+1]];
+        var hasLight=false;
+        for(var n=0;n<neighbors.length;n++){
+          var nr=neighbors[n][0],nc2=neighbors[n][1];
+          if(bgMask[nr][nc2])continue;
+          var npx=pg[nr][nc2];
+          var nlum=0.299*npx[0]+0.587*npx[1]+0.114*npx[2];
+          if(nlum-lum>40){hasLight=true;break;}
+        }
+        if(hasLight){outlineMask[i][j]=true;outlinePx.push(px);}
+      }
+    }
+  }
+
+  // Average outline color
+  if(outlinePx.length>10){
+    var os=[0,0,0];
+    for(var k=0;k<outlinePx.length;k++){os[0]+=outlinePx[k][0];os[1]+=outlinePx[k][1];os[2]+=outlinePx[k][2];}
+    outlineColor=[Math.round(os[0]/outlinePx.length),Math.round(os[1]/outlinePx.length),Math.round(os[2]/outlinePx.length)];
+  }
+  var hasOutline=outlinePx.length>10;
+
+  // โ”€โ”€ COLOR PALETTE โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // Auto-boost color count for small images
+  var totalStitches=COLS*ROWS;
+  var autoNc=nc;
+  if(totalStitches<15000&&autoNc<20)autoNc=Math.min(32,autoNc+6);
+  if(totalStitches<8000&&autoNc<24)autoNc=Math.min(32,autoNc+4);
+
+  // Collect non-bg, non-outline foreground pixels
+  var fg=[];
+  for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++){
+    if(!bgMask[i][j]&&!outlineMask[i][j])fg.push(pg[i][j]);
+  }
+  if(fg.length<autoNc*5)fg=pg.flat().filter(function(_,k){var r=Math.floor(k/COLS),c=k%COLS;return !bgMask[r][c];});
+
+  // Reserve 1 slot for outline color if detected
+  var palNc=hasOutline?Math.max(2,autoNc-1):autoNc;
+  var ctrs=medCut(fg,palNc);
+  var fgPalette=ctrs.map(function(c){return r2h(Math.round(c[0]),Math.round(c[1]),Math.round(c[2]));});
+
+  // Add outline color as first palette entry
+  if(hasOutline){
+    var outlineHex=r2h(outlineColor[0],outlineColor[1],outlineColor[2]);
+    palette=[outlineHex].concat(fgPalette);
+  } else {
+    palette=fgPalette;
+  }
+
   pushH('Convert Image');
+
+  // Map each pixel
   grid=pg.map(function(row,i){return row.map(function(px,j){
     if(bgMask[i][j])return -1;
+    if(hasOutline&&outlineMask[i][j])return 0; // always use outline color index 0
     return nHex(px,palette);
   });});
+
   SI=0;updPal();updSt();szCanvas();VX=0;VY=0;fitZoom();
 }
 
