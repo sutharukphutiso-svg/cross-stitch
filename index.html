@@ -766,7 +766,7 @@ function onBg(){document.getElementById('bgv').textContent=document.getElementBy
 
 
 
-// ─── PDF EXPORT ──────────────────────────────────────────────────────────────
+// โ”€โ”€โ”€ PDF EXPORT โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function loadJsPDF(cb){
   if(window.jspdf){cb();return;}
   var s=document.createElement('script');
@@ -845,7 +845,7 @@ function xPDF(mode,size){
     for(var ri=0;ri<ROWS;ri++)for(var ci2=0;ci2<COLS;ci2++)if(grid[ri][ci2]>=0)cnt[grid[ri][ci2]]++;
     var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
 
-    // ── PAGE 1: Cover ────────────────────────────────────────────────────────
+    // โ”€โ”€ PAGE 1: Cover โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     doc.setFillColor(45,106,79);doc.rect(0,0,A4W,18,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
     doc.text('Cross Stitch Pattern',MARGIN,12);
@@ -868,7 +868,7 @@ function xPDF(mode,size){
     var pw=prevC.width*sc,ph=prevC.height*sc;
     doc.addImage(prevData,'JPEG',(A4W-pw)/2,50,pw,ph);
 
-    // ── CHART PAGES (vector drawn) ───────────────────────────────────────────
+    // โ”€โ”€ CHART PAGES (vector drawn) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     var blocksX,blocksY;
     if(size==='S'){blocksX=1;blocksY=1;}
     else if(size==='M'){blocksX=2;blocksY=1;}
@@ -906,7 +906,7 @@ function xPDF(mode,size){
         // White chart bg
         doc.setFillColor(255,255,255);doc.rect(chartX,chartY,chartW,chartH,'F');
 
-        // ── Draw each cell with vector symbols ──────────────────────────────
+        // โ”€โ”€ Draw each cell with vector symbols โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
         for(var r=0;r<bH;r++){
           for(var c=0;c<bW;c++){
             var gi=grid[y0+r][x0+c];
@@ -968,7 +968,7 @@ function xPDF(mode,size){
       }
     }
 
-    // ── COLOR LEGEND PAGE ────────────────────────────────────────────────────
+    // โ”€โ”€ COLOR LEGEND PAGE โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     doc.addPage();
     doc.setFillColor(45,106,79);doc.rect(0,0,A4W,14,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');
@@ -1189,7 +1189,7 @@ function xPatternKeeper(){
       // Header
       doc.setFontSize(8);doc.setFont(undefined,'bold');doc.setTextColor(40,40,40);
       doc.text(
-        'Chart Block '+(idx+1)+' / '+blocks.length+'  —  '+blockLabels[idx]+'  (X:'+(blk.x0+1)+'-'+blk.x1+'  Y:'+(blk.y0+1)+'-'+blk.y1+')',
+        'Chart Block '+(idx+1)+' / '+blocks.length+'  โ€”  '+blockLabels[idx]+'  (X:'+(blk.x0+1)+'-'+blk.x1+'  Y:'+(blk.y0+1)+'-'+blk.y1+')',
         PW/2, MARGIN+1, {align:'center'}
       );
 
@@ -1204,7 +1204,7 @@ function xPatternKeeper(){
       doc.text((idx+1)+' / '+totalPages, PW-MARGIN, PH-3, {align:'right'});
     });
 
-    // ── LEGEND PAGE ─────────────────────────────────────────────────────────
+    // โ”€โ”€ LEGEND PAGE โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     doc.addPage('a4','portrait');
     doc.setFontSize(11);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
     doc.text('Symbol Legend',MARGIN,12);
@@ -1262,7 +1262,7 @@ function xPatternKeeper(){
   });
 }
 
-// ─── MOCKUP PROMPT GENERATOR (AI-powered via Claude) ────────────────────────
+// โ”€โ”€โ”€ MOCKUP PROMPT GENERATOR (AI-powered via Claude) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function genMockupPrompt(){
   var ct=parseInt(document.getElementById('fab').value);
   var wIn=(COLS/ct).toFixed(1), hIn=(ROWS/ct).toFixed(1);
@@ -1373,7 +1373,7 @@ function openGemini(){
 
 // BOOT - runs after DOM is ready
 
-// ─── MOCKUP PROMPT GENERATOR ─────────────────────────────────────────────────
+// โ”€โ”€โ”€ MOCKUP PROMPT GENERATOR โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function genMockupPrompt(){
   var ct=parseInt(document.getElementById('fab').value);
   var wIn=(COLS/ct).toFixed(1), hIn=(ROWS/ct).toFixed(1);
@@ -1425,10 +1425,10 @@ COLS+'x'+ROWS+' stitches, professional product photography, '+
 'soft lighting, close up, fabric texture visible, '+
 'realistic photo --ar 1:1 --style raw --q 2';
 
-  document.getElementById('mockup-text').textContent='── General (DALL-E / Gemini / Stable Diffusion) ──
+  document.getElementById('mockup-text').textContent='โ”€โ”€ General (DALL-E / Gemini / Stable Diffusion) โ”€โ”€
 '+prompt+'
 
-── Midjourney ──
+โ”€โ”€ Midjourney โ”€โ”€
 '+promptMJ;
   document.getElementById('mockup-box').style.display='block';
 }
@@ -1447,7 +1447,7 @@ function openMidjourney(){
 }
 function openGemini(){
   var t=document.getElementById('mockup-text').textContent;
-  var prompt=t.split('── Midjourney ──')[0].replace('── General (DALL-E / Gemini / Stable Diffusion) ──
+  var prompt=t.split('โ”€โ”€ Midjourney โ”€โ”€')[0].replace('โ”€โ”€ General (DALL-E / Gemini / Stable Diffusion) โ”€โ”€
 ','').trim();
   window.open('https://gemini.google.com/app?q='+encodeURIComponent('Create an image: '+prompt),'_blank');
 }
