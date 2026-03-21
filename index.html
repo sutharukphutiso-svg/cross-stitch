@@ -686,10 +686,11 @@ function cvtRef(){
   }
 
   // โ”€โ”€ OUTLINE DETECTION โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
-  // Detect dark outline pixels: dark pixels adjacent to non-dark pixels
-  var OUTLINE_THRESH=60; // pixel is "dark" if all channels < this
+  // Strict: only near-black pixels (lum<40) next to much brighter pixels
+  var OUTLINE_THRESH=40;  // very dark only
+  var CONTRAST_MIN=80;    // must be much brighter than outline
   var outlineMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
-  var outlineColor=[-1,-1,-1]; // will store avg outline color
+  var outlineColor=[-1,-1,-1];
 
   var outlinePx=[];
   for(var i=1;i<ROWS-1;i++){
@@ -698,17 +699,20 @@ function cvtRef(){
       var px=pg[i][j];
       var lum=0.299*px[0]+0.587*px[1]+0.114*px[2];
       if(lum<OUTLINE_THRESH){
-        // Check if adjacent to a significantly lighter pixel
-        var neighbors=[[i-1,j],[i+1,j],[i,j-1],[i,j+1]];
-        var hasLight=false;
+        // Must be adjacent to a MUCH brighter foreground pixel
+        var neighbors=[[i-1,j],[i+1,j],[i,j-1],[i,j+1],
+                        [i-1,j-1],[i-1,j+1],[i+1,j-1],[i+1,j+1]];
+        var brightCount=0;
         for(var n=0;n<neighbors.length;n++){
           var nr=neighbors[n][0],nc2=neighbors[n][1];
+          if(nr<0||nr>=ROWS||nc2<0||nc2>=COLS)continue;
           if(bgMask[nr][nc2])continue;
           var npx=pg[nr][nc2];
           var nlum=0.299*npx[0]+0.587*npx[1]+0.114*npx[2];
-          if(nlum-lum>40){hasLight=true;break;}
+          if(nlum-lum>CONTRAST_MIN)brightCount++;
         }
-        if(hasLight){outlineMask[i][j]=true;outlinePx.push(px);}
+        // Need at least 2 bright neighbors to be sure it's outline (not noise)
+        if(brightCount>=2){outlineMask[i][j]=true;outlinePx.push(px);}
       }
     }
   }
