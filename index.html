@@ -803,8 +803,9 @@ function cvtRef(){
 
   pushH('Convert Image');
 
-  // โ”€โ”€ STEP 1: Map blurred pixels to palette (Lab distance via nHex) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
-  var rawGrid=blurPg.map(function(row,i){return row.map(function(px,j){
+  // โ”€โ”€ STEP 1: Map ORIGINAL pixels to palette (not blurred - keeps detail) โ”€โ”€
+  // Blur was used for palette building only, not for final mapping
+  var rawGrid=pg.map(function(row,i){return row.map(function(px,j){
     if(bgMask[i][j])return -1;
     if(hasOutline&&outlineMask[i][j])return 0;
     return nHex(px,palette);
@@ -855,10 +856,10 @@ function cvtRef(){
       var ci=ditherGrid[i][j];
       if(ci<0)continue; // skip bg
 
-      // Get blurred pixel + accumulated error
-      var origR=blurPg[i][j][0]+errBuf[i][j][0];
-      var origG=blurPg[i][j][1]+errBuf[i][j][1];
-      var origB=blurPg[i][j][2]+errBuf[i][j][2];
+      // Get ORIGINAL pixel + accumulated error (not blurred - keeps sharp detail)
+      var origR=pg[i][j][0]+errBuf[i][j][0];
+      var origG=pg[i][j][1]+errBuf[i][j][1];
+      var origB=pg[i][j][2]+errBuf[i][j][2];
       origR=Math.max(0,Math.min(255,origR));
       origG=Math.max(0,Math.min(255,origG));
       origB=Math.max(0,Math.min(255,origB));
