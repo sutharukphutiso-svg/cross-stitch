@@ -328,18 +328,10 @@ function szCanvas(){render();}
 
 // RENDER
 function render(){
-  // Calculate canvas size - works with file://, http://, and any context
-  var sidebar=document.getElementById('sidebar');
-  var toolbar=document.getElementById('toolbar');
-  var statusbar=document.getElementById('statusbar');
-  var sbW=sidebar?sidebar.offsetWidth:230;
-  var tbH=toolbar?toolbar.offsetHeight:42;
-  var stH=statusbar?statusbar.offsetHeight:24;
-  var aW=area.offsetWidth||(window.innerWidth-sbW)||800;
-  var aH=area.offsetHeight||(window.innerHeight-tbH-stH)||600;
-  if(aW<100){aW=window.innerWidth-sbW;}
-  if(aH<100){aH=window.innerHeight-tbH-stH;}
-  if(aW<100)aW=800; if(aH<100)aH=600;
+  // Canvas size: use window dimensions (always available)
+  var aW=window.innerWidth-230;
+  var aH=window.innerHeight-42-24;
+  if(aW<100)aW=800; if(aH<100)aH=500;
   if(gc.width!==aW||gc.height!==aH){gc.width=aW;gc.height=aH;ov.width=aW;ov.height=aH;}
   var W=gc.width,H=gc.height;
   var ds=Math.max(0.1,CELL*ZL);
@@ -766,7 +758,7 @@ function onBg(){document.getElementById('bgv').textContent=document.getElementBy
 
 
 
-// ─── PDF EXPORT ──────────────────────────────────────────────────────────────
+// โ”€โ”€โ”€ PDF EXPORT โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function loadJsPDF(cb){
   if(window.jspdf){cb();return;}
   var s=document.createElement('script');
@@ -845,7 +837,7 @@ function xPDF(mode,size){
     for(var ri=0;ri<ROWS;ri++)for(var ci2=0;ci2<COLS;ci2++)if(grid[ri][ci2]>=0)cnt[grid[ri][ci2]]++;
     var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
 
-    // ── PAGE 1: Cover ────────────────────────────────────────────────────────
+    // โ”€โ”€ PAGE 1: Cover โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     doc.setFillColor(45,106,79);doc.rect(0,0,A4W,18,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
     doc.text('Cross Stitch Pattern',MARGIN,12);
@@ -868,7 +860,7 @@ function xPDF(mode,size){
     var pw=prevC.width*sc,ph=prevC.height*sc;
     doc.addImage(prevData,'JPEG',(A4W-pw)/2,50,pw,ph);
 
-    // ── CHART PAGES (vector drawn) ───────────────────────────────────────────
+    // โ”€โ”€ CHART PAGES (vector drawn) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     var blocksX,blocksY;
     if(size==='S'){blocksX=1;blocksY=1;}
     else if(size==='M'){blocksX=2;blocksY=1;}
@@ -906,7 +898,7 @@ function xPDF(mode,size){
         // White chart bg
         doc.setFillColor(255,255,255);doc.rect(chartX,chartY,chartW,chartH,'F');
 
-        // ── Draw each cell with vector symbols ──────────────────────────────
+        // โ”€โ”€ Draw each cell with vector symbols โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
         for(var r=0;r<bH;r++){
           for(var c=0;c<bW;c++){
             var gi=grid[y0+r][x0+c];
@@ -968,7 +960,7 @@ function xPDF(mode,size){
       }
     }
 
-    // ── COLOR LEGEND PAGE ────────────────────────────────────────────────────
+    // โ”€โ”€ COLOR LEGEND PAGE โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     doc.addPage();
     doc.setFillColor(45,106,79);doc.rect(0,0,A4W,14,'F');
     doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');
@@ -1189,7 +1181,7 @@ function xPatternKeeper(){
       // Header
       doc.setFontSize(8);doc.setFont(undefined,'bold');doc.setTextColor(40,40,40);
       doc.text(
-        'Chart Block '+(idx+1)+' / '+blocks.length+'  —  '+blockLabels[idx]+'  (X:'+(blk.x0+1)+'-'+blk.x1+'  Y:'+(blk.y0+1)+'-'+blk.y1+')',
+        'Chart Block '+(idx+1)+' / '+blocks.length+'  โ€”  '+blockLabels[idx]+'  (X:'+(blk.x0+1)+'-'+blk.x1+'  Y:'+(blk.y0+1)+'-'+blk.y1+')',
         PW/2, MARGIN+1, {align:'center'}
       );
 
@@ -1204,7 +1196,7 @@ function xPatternKeeper(){
       doc.text((idx+1)+' / '+totalPages, PW-MARGIN, PH-3, {align:'right'});
     });
 
-    // ── LEGEND PAGE ─────────────────────────────────────────────────────────
+    // โ”€โ”€ LEGEND PAGE โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     doc.addPage('a4','portrait');
     doc.setFontSize(11);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
     doc.text('Symbol Legend',MARGIN,12);
@@ -1262,7 +1254,7 @@ function xPatternKeeper(){
   });
 }
 
-// ─── MOCKUP PROMPT GENERATOR (AI-powered via Claude) ────────────────────────
+// โ”€โ”€โ”€ MOCKUP PROMPT GENERATOR (AI-powered via Claude) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function genMockupPrompt(){
   var ct=parseInt(document.getElementById('fab').value);
   var wIn=(COLS/ct).toFixed(1), hIn=(ROWS/ct).toFixed(1);
@@ -1289,31 +1281,7 @@ function genMockupPrompt(){
   document.getElementById('mockup-copy-btn').disabled=true;
 
   // Call Claude API to generate an optimized Gemini image prompt
-  var userMsg='I have a cross stitch pattern with these details:
-'+
-    '- Size: '+COLS+' x '+ROWS+' stitches
-'+
-    '- Finished size: '+wIn+'" x '+hIn+'" on '+fabricName+'
-'+
-    '- Number of colors: '+nc+' DMC thread colors
-'+
-    '- Dominant colors: '+colorList+'
-
-'+
-    'Generate TWO things:
-'+
-    '1. A short English image generation prompt (2-3 sentences) for Google Gemini/Imagine to create a realistic mockup photo of this finished cross stitch embroidery, displayed in a round wooden hoop on a clean background, showing the Aida fabric texture and X-shaped stitches. Include a placeholder [SUBJECT] where the user should describe their design.
-'+
-    '2. The same prompt but formatted for Midjourney with --ar 1:1 --style raw --q 2
-
-'+
-    'Format your response exactly as:
-'+
-    'GEMINI:
-[prompt here]
-
-MIDJOURNEY:
-[prompt here]';
+  var userMsg='I have a cross stitch pattern with these details:\n- Size: '+COLS+' x '+ROWS+' stitches\n- Finished size: '+wIn+'" x '+hIn+'" on '+fabricName+'\n- Number of colors: '+nc+' DMC thread colors\n- Dominant colors: '+colorList+'\n\nGenerate TWO things:\n1. A short English image generation prompt (2-3 sentences) for Google Gemini/Imagine to create a realistic mockup photo of this finished cross stitch embroidery, displayed in a round wooden hoop on a clean background, showing the Aida fabric texture and X-shaped stitches. Include a placeholder [SUBJECT] where the user should describe their design.\n2. The same prompt but formatted for Midjourney with --ar 1:1 --style raw --q 2\n\nFormat your response exactly as:\nGEMINI:\n[prompt here]\n\nMIDJOURNEY:\n[prompt here]';
 
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
@@ -1332,21 +1300,7 @@ MIDJOURNEY:
   })
   .catch(function(err){
     // Fallback to local prompt if API fails
-    var fallback=
-'GEMINI:
-'+
-'A professional product photo of a finished cross stitch embroidery showing [SUBJECT], '+
-'stitched with '+colorList.split(',').slice(0,3).join(',').toLowerCase()+' DMC threads, '+
-'displayed in a round wooden hoop on white Aida fabric ('+fabricName+'), '+
-COLS+'x'+ROWS+' stitches, '+wIn+'" x '+hIn+'", '+
-'soft natural lighting, close-up shot showing fabric texture and X-shaped stitches clearly, 8k photo.
-
-'+
-'MIDJOURNEY:
-'+
-'/imagine prompt: finished cross stitch embroidery in wooden hoop, [SUBJECT] design, '+
-colorList.split(',').slice(0,3).join(',').toLowerCase()+' thread colors, white Aida fabric, '+
-'product photography, soft lighting, close up, realistic --ar 1:1 --style raw --q 2';
+    var fallback='GEMINI:\n'+'A professional product photo of a finished cross stitch embroidery showing [SUBJECT], '+'stitched with '+colorList.split(',').slice(0,3).join(',').toLowerCase()+' DMC threads, '+'displayed in a round wooden hoop on white Aida fabric ('+fabricName+'), '+COLS+'x'+ROWS+' stitches, '+wIn+'" x '+hIn+'", '+'soft natural lighting, close-up shot showing fabric texture and X-shaped stitches clearly, 8k photo.\n\n'+'MIDJOURNEY:\n'+'/imagine prompt: finished cross stitch embroidery in wooden hoop, [SUBJECT] design, '+colorList.split(',').slice(0,3).join(',').toLowerCase()+' thread colors, white Aida fabric, '+'product photography, soft lighting, close up, realistic --ar 1:1 --style raw --q 2';
     txt.textContent=fallback;
     document.getElementById('mockup-copy-btn').disabled=false;
   });
@@ -1365,15 +1319,14 @@ function copyMockup(){
 function openMidjourney(){window.open('https://www.midjourney.com','_blank');}
 function openGemini(){
   var t=document.getElementById('mockup-text').textContent;
-  var geminiPart=t.split('MIDJOURNEY:')[0].replace('GEMINI:
-','').trim();
+  var geminiPart=t.split('MIDJOURNEY:')[0].replace('GEMINI:\n','').trim();
   window.open('https://gemini.google.com/app?q='+encodeURIComponent('Generate this image: '+geminiPart),'_blank');
 }
 
 
 // BOOT - runs after DOM is ready
 
-// ─── MOCKUP PROMPT GENERATOR ─────────────────────────────────────────────────
+// โ”€โ”€โ”€ MOCKUP PROMPT GENERATOR โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function genMockupPrompt(){
   var ct=parseInt(document.getElementById('fab').value);
   var wIn=(COLS/ct).toFixed(1), hIn=(ROWS/ct).toFixed(1);
@@ -1425,11 +1378,7 @@ COLS+'x'+ROWS+' stitches, professional product photography, '+
 'soft lighting, close up, fabric texture visible, '+
 'realistic photo --ar 1:1 --style raw --q 2';
 
-  document.getElementById('mockup-text').textContent='── General (DALL-E / Gemini / Stable Diffusion) ──
-'+prompt+'
-
-── Midjourney ──
-'+promptMJ;
+  document.getElementById('mockup-text').textContent='โ”€โ”€ General (DALL-E / Gemini / Stable Diffusion) โ”€โ”€\n'+prompt+'\n\nโ”€โ”€ Midjourney โ”€โ”€\n'+promptMJ;
   document.getElementById('mockup-box').style.display='block';
 }
 
@@ -1447,8 +1396,7 @@ function openMidjourney(){
 }
 function openGemini(){
   var t=document.getElementById('mockup-text').textContent;
-  var prompt=t.split('── Midjourney ──')[0].replace('── General (DALL-E / Gemini / Stable Diffusion) ──
-','').trim();
+  var prompt=t.split('โ”€โ”€ Midjourney โ”€โ”€')[0].replace('โ”€โ”€ General (DALL-E / Gemini / Stable Diffusion) โ”€โ”€\n','').trim();
   window.open('https://gemini.google.com/app?q='+encodeURIComponent('Create an image: '+prompt),'_blank');
 }
 
@@ -1457,36 +1405,16 @@ function boot(){
   grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
   updSt();
   updPal();
-  // render() will auto-resize canvas on first call
-  // Call multiple times to ensure canvas gets sized
+  var w=window.innerWidth-230;
+  var h=window.innerHeight-66;
+  if(w<100)w=800; if(h<100)h=500;
+  ZL=Math.min(w/(COLS*CELL),h/(ROWS*CELL));
+  ZL=Math.max(0.05,ZL);
+  document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';
   render();
-  setTimeout(function(){
-    var sidebar=document.getElementById('sidebar');
-    var sbW=sidebar?sidebar.offsetWidth:230;
-    var w=area.offsetWidth||(window.innerWidth-sbW)||800;
-    var h=area.offsetHeight||(window.innerHeight-66)||600;
-    ZL=Math.min(w/(COLS*CELL),h/(ROWS*CELL));
-    ZL=Math.max(0.05,ZL);
-    document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';
-    render();
-  },100);
-  setTimeout(function(){
-    var sidebar=document.getElementById('sidebar');
-    var sbW=sidebar?sidebar.offsetWidth:230;
-    var w=area.offsetWidth||(window.innerWidth-sbW)||800;
-    var h=area.offsetHeight||(window.innerHeight-66)||600;
-    ZL=Math.min(w/(COLS*CELL),h/(ROWS*CELL));
-    ZL=Math.max(0.05,ZL);
-    document.getElementById('zpct').textContent=Math.round(ZL*100)+'%';
-    render();
-  },800);
   window.addEventListener('resize',function(){render();});
 }
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded', boot);
-} else {
-  setTimeout(boot, 0);
-}
+window.addEventListener('load', boot);
 </script>
 </body>
 </html>
