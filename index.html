@@ -18,9 +18,23 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;font-size
 #sb-body::-webkit-scrollbar-thumb{background:#e2ddd6;border-radius:2px}
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 #toolbar{height:42px;background:#fff;border-bottom:1px solid #e2ddd6;display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;overflow-x:auto}
+#work-row{flex:1;display:flex;overflow:hidden}
 #canvas-area{flex:1;position:relative;overflow:hidden;background:#e8e4dc}
 #gc,#ov{position:absolute;top:0;left:0;image-rendering:pixelated;image-rendering:crisp-edges}
 #ov{pointer-events:none}
+#ref-panel{width:220px;flex-shrink:0;background:#fff;border-left:1px solid #e2ddd6;display:flex;flex-direction:column;overflow:hidden}
+#ref-panel.hidden{display:none}
+#ref-panel-head{padding:8px 10px;border-bottom:1px solid #e2ddd6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#ref-panel-head span{font-size:11px;font-weight:500;color:#8a847c;text-transform:uppercase;letter-spacing:.5px}
+#ref-panel-body{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px}
+#ref-orig-wrap{border:1px solid #e2ddd6;border-radius:6px;overflow:hidden;background:#f7f4ef}
+#ref-orig-wrap img{width:100%;display:block}
+#ref-orig-wrap .ref-label{font-size:10px;color:#8a847c;padding:4px 7px;background:#f7f4ef;border-top:1px solid #e2ddd6}
+#ref-zoom-wrap{border:1px solid #e2ddd6;border-radius:6px;overflow:hidden;background:#f7f4ef}
+#ref-zoom-canvas{width:100%;display:block;image-rendering:pixelated}
+#ref-zoom-wrap .ref-label{font-size:10px;color:#8a847c;padding:4px 7px;background:#f7f4ef;border-top:1px solid #e2ddd6}
+#color-replace-bar{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:6px 8px;font-size:11px;display:none;margin:4px 0}
+#color-replace-bar b{color:#856404}
 #statusbar{height:24px;background:#fff;border-top:1px solid #e2ddd6;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;font-size:11px;color:#8a847c}
 #statusbar b{color:#1a1714;font-weight:500}
 .sec{margin-bottom:8px}
@@ -167,13 +181,51 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 <button class="tb-btn" id="t-pick" onclick="setTool('pick',this)">Pick</button>
 <button class="tb-btn" id="t-line" onclick="setTool('line',this)">Line</button>
 <button class="tb-btn" id="t-select" onclick="setTool('select',this)">Select</button>
+<button class="tb-btn" id="t-replace" onclick="setTool('replace',this)" title="Click a color in canvas to replace all pixels of that color">Replace Color</button>
 <div style="width:1px;height:18px;background:#e2ddd6;margin:0 2px;flex-shrink:0"></div>
 <button class="tb-btn" onclick="doZoom(1.25)">+</button>
 <div class="zi" id="zpct">100%</div>
 <button class="tb-btn" onclick="doZoom(0.8)">-</button>
 <button class="tb-btn" onclick="fitZoom()">Reset</button>
+<div style="width:1px;height:18px;background:#e2ddd6;margin:0 2px;flex-shrink:0"></div>
+<button class="tb-btn" id="btn-ref-panel" onclick="toggleRefPanel()" title="Show/hide original image reference">Ref Image</button>
 </div>
+<div id="color-replace-bar">
+  🎨 <b>Replace Color Mode:</b> คลิกที่ canvas เพื่อเลือกสีที่จะแทนที่ด้วย <b id="replace-target-swatch" style="display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid #ccc;vertical-align:middle;margin:0 3px"></b><span id="replace-target-name"></span>
+  &nbsp;→&nbsp; เปลี่ยนเป็น <b id="replace-new-swatch" style="display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid #ccc;vertical-align:middle;margin:0 3px"></b><span id="replace-new-name"></span>
+</div>
+<div id="work-row">
 <div id="canvas-area"><canvas id="gc"></canvas><canvas id="ov"></canvas></div>
+<div id="ref-panel" class="hidden">
+  <div id="ref-panel-head">
+    <span>Reference Image</span>
+    <button class="btn" onclick="toggleRefPanel()" style="padding:2px 7px;font-size:10px">✕</button>
+  </div>
+  <div id="ref-panel-body">
+    <div id="ref-no-image" style="font-size:11px;color:#8a847c;text-align:center;padding:20px 0">
+      Upload an image in the sidebar to see it here
+    </div>
+    <div id="ref-orig-wrap" style="display:none">
+      <img id="ref-panel-img" src="" alt="Original">
+      <div class="ref-label">Original Image</div>
+    </div>
+    <div id="ref-zoom-wrap" style="display:none">
+      <canvas id="ref-zoom-canvas" width="200" height="200"></canvas>
+      <div class="ref-label" id="ref-zoom-label">Zoomed area</div>
+    </div>
+    <div id="ref-color-info" style="display:none">
+      <div style="font-size:10px;font-weight:500;color:#8a847c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Color at cursor</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div id="ref-hover-swatch" style="width:28px;height:28px;border-radius:4px;border:1px solid #e2ddd6;flex-shrink:0"></div>
+        <div>
+          <div id="ref-hover-hex" style="font-size:11px;font-weight:500;font-family:monospace"></div>
+          <div id="ref-hover-dmc" style="font-size:10px;color:#8a847c"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
 <div id="statusbar">
 <span>Tool: <b id="stl">Move</b></span>
 <span>Pos: <b id="stp">--</b></span>
@@ -307,6 +359,8 @@ var grid=[],palette=[],SI=0,tool='move';
 var hist=[],hlab=[];
 var painting=false,panSt=null,lineSt=null,selRect=null;
 var cpTgt=-1,refSrc=null;
+// Replace color tool state
+var replaceStep=0, replaceSrc=-1;
 
 var gc=document.getElementById('gc');
 var ctx=gc.getContext('2d');
@@ -329,8 +383,9 @@ function szCanvas(){render();}
 // RENDER
 function render(){
   // Canvas size: use window dimensions (always available)
-  var aW=window.innerWidth-230;
-  var aH=window.innerHeight-42-24;
+  var refW=document.getElementById('ref-panel').classList.contains('hidden')?0:220;
+  var aW=window.innerWidth-230-refW;
+  var aH=window.innerHeight-42-24-26;
   if(aW<100)aW=800; if(aH<100)aH=500;
   if(gc.width!==aW||gc.height!==aH){gc.width=aW;gc.height=aH;ov.width=aW;ov.height=aH;}
   var W=gc.width,H=gc.height;
@@ -398,9 +453,19 @@ function setTool(t,btn){
   tool=t;
   document.querySelectorAll('.tb-btn').forEach(function(b){b.classList.remove('act');});
   btn.classList.add('act');
-  var cur={move:'grab',paint:'crosshair',erase:'cell',fill:'crosshair',pick:'crosshair',line:'crosshair',select:'default'};
+  var cur={move:'grab',paint:'crosshair',erase:'cell',fill:'crosshair',pick:'crosshair',line:'crosshair',select:'default',replace:'crosshair'};
   area.style.cursor=cur[t]||'crosshair';
   document.getElementById('stl').textContent=btn.textContent.trim();
+  // Show/hide replace color bar
+  var bar=document.getElementById('color-replace-bar');
+  if(t==='replace'){
+    bar.style.display='block';
+    replaceStep=1; // step 1: pick source color from canvas
+    updReplaceBar();
+  } else {
+    bar.style.display='none';
+    replaceStep=0;replaceSrc=-1;
+  }
 }
 function paintCell(c,r){
   if(!inB(c,r))return false;
@@ -421,6 +486,19 @@ function drawLine(x0,y0,x1,y1){
 // MOUSE
 area.addEventListener('mousedown',function(e){
   var p=getCell(e),c=p[0],r=p[1];
+  if(tool==='replace'){
+    if(replaceStep===1){
+      // Step 1: pick source color from canvas
+      if(inB(c,r)&&grid[r][c]>=0){
+        replaceSrc=grid[r][c];
+        replaceStep=2;
+        // Auto-select a different palette color as target (next in palette, or SI)
+        if(SI===replaceSrc){SI=(replaceSrc+1)%palette.length;}
+        updPal();updReplaceBar();
+      }
+    }
+    return;
+  }
   if(tool==='move'){painting=true;area.style.cursor='grabbing';panSt={x:e.clientX,y:e.clientY,vx:VX,vy:VY};return;}
   if(tool==='pick'){if(inB(c,r)&&grid[r][c]>=0){SI=grid[r][c];updPal();updSS();}return;}
   if(tool==='fill'){if(!inB(c,r))return;pushH('Fill');flood(c,r,grid[r][c],SI);render();return;}
@@ -434,6 +512,8 @@ area.addEventListener('mousemove',function(e){
   if(tool==='move'&&painting&&panSt){var ds=Math.max(.1,CELL*ZL);VX=Math.max(0,panSt.vx-(e.clientX-panSt.x)/ds);VY=Math.max(0,panSt.vy-(e.clientY-panSt.y)/ds);render();return;}
   if(tool==='select'&&selRect&&e.buttons){selRect.w=c-selRect.x+1;selRect.h=r-selRect.y+1;render();return;}
   if(painting&&(tool==='paint'||tool==='erase')){paintCell(c,r);render();}
+  // Update ref panel zoom when hovering over canvas
+  if(inB(c,r)&&!document.getElementById('ref-panel').classList.contains('hidden')){updRefZoom(c,r);}
 });
 area.addEventListener('mouseup',function(e){
   var p=getCell(e),c=p[0],r=p[1];
@@ -461,7 +541,7 @@ function clearCanvas(){pushH('Clear');grid=Array.from({length:ROWS},function(){r
 // PALETTE
 function updPal(){
   var el=document.getElementById('pgrid');
-  el.innerHTML=palette.map(function(h,i){return '<div class="sw'+(i===SI?' sel':'')+'" style="background:'+h+'" title="'+h+'" onclick="SI='+i+';updPal();updSS()" ondblclick="editCol('+i+')"></div>';}).join('')+'<div class="sw-add" onclick="addCol()" title="Add">+</div>';
+  el.innerHTML=palette.map(function(h,i){return '<div class="sw'+(i===SI?' sel':'')+'" style="background:'+h+'" title="'+h+'" onclick="SI='+i+';updPal();updSS();if(replaceStep===2)updReplaceBar();" ondblclick="editCol('+i+')"></div>';}).join('')+'<div class="sw-add" onclick="addCol()" title="Add">+</div>';
   document.getElementById('pcnt').textContent=palette.length;
   updSS();updDMC();
 }
@@ -602,6 +682,7 @@ function loadRef(f){
       document.getElementById('rimg').src=ev.target.result;
       document.getElementById('rimg').style.display='block';
       document.getElementById('rbtns').style.display='block';
+      updRefPanel(ev.target.result);
       cvtRef();
     };
     refSrc.src=ev.target.result;
@@ -1776,12 +1857,92 @@ function openGemini(){
 }
 
 // BOOT - runs after DOM is ready
+// โ"€โ"€โ"€ REPLACE COLOR TOOL โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€
+function updReplaceBar(){
+  var bar=document.getElementById('color-replace-bar');
+  if(replaceStep===1){
+    bar.innerHTML='🎨 <b>Replace Color Mode:</b> คลิกที่ canvas เพื่อ<b>เลือกสีที่จะถูกแทนที่</b> (ขั้นตอน 1/2)&nbsp;<button class="btn" style="padding:2px 8px;font-size:11px" onclick="cancelReplace()">ยกเลิก</button>';
+  } else if(replaceStep===2){
+    var sh=palette[replaceSrc]||'#ddd';
+    var sdmc=nDMC(sh);
+    var nh=palette[SI]||'#ddd';
+    var ndmc=nDMC(nh);
+    bar.innerHTML='🎨 <b>แทนที่:</b> <span style="display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid #ccc;vertical-align:middle;background:'+sh+'"></span> DMC '+sdmc.num+' '+sdmc.name+' &nbsp;→&nbsp; <span style="display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid #ccc;vertical-align:middle;background:'+nh+'"></span> DMC '+ndmc.num+' '+ndmc.name+'&nbsp; <small style="color:#856404">(เลือกสีใน palette แล้วกด Replace)</small>&nbsp;<button class="btn pr" style="padding:2px 8px;font-size:11px" onclick="doReplace()">Replace All</button>&nbsp;<button class="btn" style="padding:2px 8px;font-size:11px" onclick="cancelReplace()">ยกเลิก</button>';
+  }
+}
+function doReplace(){
+  if(replaceSrc<0||replaceSrc>=palette.length)return;
+  if(SI===replaceSrc){cancelReplace();return;}
+  pushH('Replace Color');
+  var count=0;
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]===replaceSrc){grid[r][c]=SI;count++;}
+  render();updDMC();
+  var bar=document.getElementById('color-replace-bar');
+  var sh=palette[replaceSrc]||'';var nh=palette[SI]||'';
+  var sdmc=nDMC(sh);var ndmc=nDMC(nh);
+  bar.innerHTML='✅ เปลี่ยนสี DMC '+sdmc.num+' → DMC '+ndmc.num+' แล้ว '+count+' pixels &nbsp;<button class="btn" style="padding:2px 8px;font-size:11px" onclick="this.parentElement.style.display=\'none\'">OK</button>';
+  replaceStep=0;replaceSrc=-1;
+  var mb=document.getElementById('t-move');if(mb){tool='move';document.querySelectorAll('.tb-btn').forEach(function(b){b.classList.remove('act');});mb.classList.add('act');area.style.cursor='grab';}
+  setTimeout(function(){var b=document.getElementById('color-replace-bar');if(b&&b.style.display!=='none'&&b.textContent.startsWith('✅'))b.style.display='none';},4000);
+}
+function cancelReplace(){
+  replaceStep=0;replaceSrc=-1;
+  document.getElementById('color-replace-bar').style.display='none';
+  var mb=document.getElementById('t-move');
+  if(mb){tool='move';document.querySelectorAll('.tb-btn').forEach(function(b){b.classList.remove('act');});mb.classList.add('act');area.style.cursor='grab';document.getElementById('stl').textContent='Move';}
+}
+
+// โ"€โ"€โ"€ REFERENCE PANEL โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€
+function toggleRefPanel(){
+  var p=document.getElementById('ref-panel');
+  p.classList.toggle('hidden');
+  document.getElementById('btn-ref-panel').classList.toggle('act',!p.classList.contains('hidden'));
+  render();
+}
+function updRefPanel(imgSrc){
+  document.getElementById('ref-no-image').style.display='none';
+  document.getElementById('ref-orig-wrap').style.display='block';
+  document.getElementById('ref-panel-img').src=imgSrc;
+  var p=document.getElementById('ref-panel');
+  if(p.classList.contains('hidden')){p.classList.remove('hidden');document.getElementById('btn-ref-panel').classList.add('act');render();}
+}
+function updRefZoom(col,row){
+  if(!refSrc)return;
+  var zw=document.getElementById('ref-zoom-wrap');
+  var zc=document.getElementById('ref-zoom-canvas');
+  zw.style.display='block';
+  var ZR=5;
+  var sw=ZR*2+1,sh=ZR*2+1;
+  zc.width=sw*8;zc.height=sh*8;
+  var sx=Math.max(0,col-ZR),sy=Math.max(0,row-ZR);
+  var sw2=Math.min(COLS,col+ZR+1)-sx;
+  var sh2=Math.min(ROWS,row+ZR+1)-sy;
+  var zx=zc.getContext('2d');
+  zx.fillStyle='#f7f4ef';zx.fillRect(0,0,zc.width,zc.height);
+  var tmp=document.createElement('canvas');tmp.width=COLS;tmp.height=ROWS;
+  var tx=tmp.getContext('2d');tx.drawImage(refSrc,0,0,COLS,ROWS);
+  zx.imageSmoothingEnabled=false;
+  zx.drawImage(tmp,sx,sy,sw2,sh2,0,0,sw2*8,sh2*8);
+  var cx2=(col-sx)*8+4,cy2=(row-sy)*8+4;
+  zx.strokeStyle='rgba(220,50,50,0.85)';zx.lineWidth=1.5;
+  zx.beginPath();zx.moveTo(cx2-7,cy2);zx.lineTo(cx2+7,cy2);zx.stroke();
+  zx.beginPath();zx.moveTo(cx2,cy2-7);zx.lineTo(cx2,cy2+7);zx.stroke();
+  document.getElementById('ref-zoom-label').textContent='ซูม: ตำแหน่ง ('+(col+1)+','+(row+1)+')';
+  var pdata=tx.getImageData(col,row,1,1).data;
+  var ph=r2h(pdata[0],pdata[1],pdata[2]);
+  var pdmc=nDMC(ph);
+  document.getElementById('ref-color-info').style.display='block';
+  document.getElementById('ref-hover-swatch').style.background=ph;
+  document.getElementById('ref-hover-hex').textContent=ph.toUpperCase();
+  document.getElementById('ref-hover-dmc').textContent='≈ DMC '+pdmc.num+' '+pdmc.name;
+}
+
 function boot(){
   grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
   updSt();
   updPal();
   var w=window.innerWidth-230;
-  var h=window.innerHeight-66;
+  var h=window.innerHeight-66-26;
   if(w<100)w=800; if(h<100)h=500;
   ZL=Math.min(w/(COLS*CELL),h/(ROWS*CELL));
   ZL=Math.max(0.05,ZL);
