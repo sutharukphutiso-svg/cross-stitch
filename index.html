@@ -729,7 +729,7 @@ function cvtRef(){
   // nc = user's Max Colors setting = STRICT HARD LIMIT
   // Never exceed nc. Only auto-boost for small images when user hasn't manually lowered nc.
   var totalStitches=COLS*ROWS;
-  var autoNc=nc; // always start from user's value
+  var autoNc=nc; // always start from user value
   if(nc>=20){
     // Only auto-boost if user left nc at a high default
     if(totalStitches<15000)autoNc=Math.min(nc,autoNc+4);
@@ -782,13 +782,137 @@ function cvtRef(){
 
   pushH('Convert Image');
 
-  // Map each pixel
-  grid=pg.map(function(row,i){return row.map(function(px,j){
+  // โ”€โ”€ STEP 1: Initial pixel mapping using Lab distance โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  var rawGrid=pg.map(function(row,i){return row.map(function(px,j){
     if(bgMask[i][j])return -1;
-    if(hasOutline&&outlineMask[i][j])return 0; // always use outline color index 0
+    if(hasOutline&&outlineMask[i][j])return 0;
     return nHex(px,palette);
   });});
 
+  // โ”€โ”€ STEP 2: Smooth transitions (anti-blockiness) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // Replace isolated single-pixel color "specks" with neighbor's color
+  // This eliminates noise without dithering
+  var smoothGrid=rawGrid.map(function(row){return row.slice();});
+
+  for(var pass=0;pass<2;pass++){
+    for(var i=1;i<ROWS-1;i++){
+      for(var j=1;j<COLS-1;j++){
+        var ci=smoothGrid[i][j];
+        if(ci<0)continue;
+
+        // Count neighbors with same color
+        var nbrs=[smoothGrid[i-1][j],smoothGrid[i+1][j],
+                  smoothGrid[i][j-1],smoothGrid[i][j+1]];
+        var sameCount=nbrs.filter(function(n){return n===ci;}).length;
+
+        // Isolated pixel (0 same neighbors) = noise โ’ replace with majority neighbor
+        if(sameCount===0){
+          var freq={};
+          nbrs.forEach(function(n){if(n>=0){freq[n]=(freq[n]||0)+1;}});
+          var best=ci,bestN=0;
+          Object.keys(freq).forEach(function(k){if(freq[k]>bestN){bestN=freq[k];best=parseInt(k);}});
+          smoothGrid[i][j]=best;
+        }
+      }
+    }
+  }
+
+  // โ”€โ”€ STEP 3: Color family protection โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+  // Prevent color contamination: if a pixel's true color is in one hue family,
+  // only allow replacements from the same family
+  // Build hue families from palette
+  function getHue(hex){
+    var rgb=h2r(hex);if(!rgb)return 0;
+    var r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
+    var max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+    if(d===0)return -1; // achromatic
+    var h;
+    if(max===r)h=(g-b)/d+(g<b?6:0);
+    else if(max===g)h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    return h*60;
+  }
+  function getSat(hex){
+    var rgb=h2r(hex);if(!rgb)return 0;
+    var r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
+    var max=Math.max(r,g,b),min=Math.min(r,g,b);
+    return max===0?0:(max-min)/max;
+  }
+
+  // Classify each palette color into hue family
+  var palFamily=palette.map(function(hex,i){
+    if(i===0&&hasOutline)return 'outline';
+    var sat=getSat(hex);
+    if(sat<0.15)return 'neutral'; // gray/white/beige
+    var hue=getHue(hex);
+    if(hue<0)return 'neutral';
+    if(hue>=300||hue<20)return 'red-pink';   // red, pink, magenta
+    if(hue>=20&&hue<50)return 'orange-brown';
+    if(hue>=50&&hue<80)return 'yellow';
+    if(hue>=80&&hue<165)return 'green';
+    if(hue>=165&&hue<255)return 'blue-teal';
+    if(hue>=255&&hue<300)return 'purple-violet';
+    return 'neutral';
+  });
+
+  // For each pixel, check if neighbors are all from same family
+  // If so, don't allow cross-family contamination
+  var finalGrid=smoothGrid.map(function(row){return row.slice();});
+  for(var i=1;i<ROWS-1;i++){
+    for(var j=1;j<COLS-1;j++){
+      var ci=finalGrid[i][j];
+      if(ci<0||ci>=palette.length)continue;
+      var myFam=palFamily[ci];
+      if(myFam==='neutral'||myFam==='outline')continue;
+
+      // Look at 3x3 neighborhood
+      var fams={};
+      for(var di=-2;di<=2;di++){
+        for(var dj=-2;dj<=2;dj++){
+          var ni=i+di,nj=j+dj;
+          if(ni<0||ni>=ROWS||nj<0||nj>=COLS)continue;
+          var nc2=finalGrid[ni][nj];
+          if(nc2>=0&&nc2<palette.length){
+            var f=palFamily[nc2];
+            fams[f]=(fams[f]||0)+1;
+          }
+        }
+      }
+
+      // If this pixel's family is a minority (1 pixel) in a neighborhood
+      // dominated by a DIFFERENT non-neutral family โ’ contamination
+      var myCount=fams[myFam]||0;
+      var totalColored=Object.keys(fams).reduce(function(s,k){
+        return k==='neutral'?s:s+(fams[k]||0);
+      },0);
+
+      if(myCount<=2&&totalColored>=8){
+        // Find dominant family color
+        var domFam='neutral',domCount=0;
+        Object.keys(fams).forEach(function(f){
+          if(f!=='neutral'&&f!==myFam&&(fams[f]||0)>domCount){
+            domCount=fams[f];domFam=f;
+          }
+        });
+        // Only correct if clearly wrong family (not just neighbor color)
+        if(domCount>=6&&domFam!=='neutral'){
+          // Find closest palette color in dominant family
+          var best=ci;
+          var lab1=rgb2lab.apply(null,h2r(palette[ci])||[128,128,128]);
+          var bd=1e9;
+          for(var pi=0;pi<palette.length;pi++){
+            if(palFamily[pi]!==domFam)continue;
+            var lab2=rgb2lab.apply(null,h2r(palette[pi])||[128,128,128]);
+            var dd=Math.pow(lab1[0]-lab2[0],2)+Math.pow(lab1[1]-lab2[1],2)+Math.pow(lab1[2]-lab2[2],2);
+            if(dd<bd){bd=dd;best=pi;}
+          }
+          finalGrid[i][j]=best;
+        }
+      }
+    }
+  }
+
+  grid=finalGrid;
   SI=0;updPal();updSt();szCanvas();VX=0;VY=0;fitZoom();
 }
 
