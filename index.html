@@ -77,7 +77,7 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 .dc{color:#8a847c;font-size:10px;margin-left:auto;flex-shrink:0}
 #dlist{max-height:160px;overflow-y:auto;margin-top:4px}
 #dbox{font-size:11px;line-height:1.6;white-space:pre-wrap;background:#fff;border:1px solid #e2ddd6;border-radius:6px;padding:8px;max-height:140px;overflow-y:auto;font-family:monospace;color:#8a847c}
-#cpick{display:none;position:fixed;z-index:999;background:#fff;border:1px solid #e2ddd6;border-radius:9px;padding:11px;box-shadow:0 6px 20px rgba(0,0,0,.12);width:190px}
+#cpick{display:none;position:fixed;z-index:9999;background:#fff;border:1px solid #e2ddd6;border-radius:9px;padding:11px;box-shadow:0 6px 20px rgba(0,0,0,.18);width:200px}
 #cpick input[type=color]{width:100%;height:34px;border:none;border-radius:5px;cursor:pointer;padding:0}
 #cpick input[type=text]{width:100%;margin-top:5px;padding:4px 7px;border:1px solid #e2ddd6;border-radius:5px;font-size:12px;font-family:monospace}
 .fb{display:inline-block;background:#f0f7f4;color:#2d6a4f;border:1px solid #74c69d;border-radius:3px;padding:1px 6px;font-size:10px;margin-top:3px}
@@ -564,7 +564,16 @@ function clearUnused(){
 // COLOR PICKER
 function addCol(){cpTgt=-1;openCP('#4a9eff');}
 function editCol(i){cpTgt=i;openCP(palette[i]);}
-function openCP(hex){var el=document.getElementById('cpick');document.getElementById('cpc').value=hex;document.getElementById('cph').value=hex;el.style.display='block';el.style.top='80px';el.style.right='14px';}
+function openCP(hex){
+  var el=document.getElementById('cpick');
+  document.getElementById('cpc').value=hex;
+  document.getElementById('cph').value=hex;
+  el.style.display='block';
+  // Position near the palette area (left sidebar), not right side
+  el.style.top='120px';
+  el.style.left='14px';
+  el.style.right='auto';
+}
 function cpChg(){document.getElementById('cph').value=document.getElementById('cpc').value;}
 function cpHex(){var v=document.getElementById('cph').value.trim();if(!v.startsWith('#'))v='#'+v;if(/^#[0-9a-fA-F]{6}$/.test(v))document.getElementById('cpc').value=v;}
 function cpOK(){var hex=document.getElementById('cpc').value;if(cpTgt===-1){palette.push(hex);SI=palette.length-1;}else palette[cpTgt]=hex;updPal();render();cpX();}
