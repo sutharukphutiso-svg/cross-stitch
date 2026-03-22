@@ -22,7 +22,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;font-size
 #canvas-area{flex:1;position:relative;overflow:hidden;background:#e8e4dc}
 #gc,#ov{position:absolute;top:0;left:0;image-rendering:pixelated;image-rendering:crisp-edges}
 #ov{pointer-events:none}
-#ref-panel{width:240px;flex-shrink:0;background:#fff;border-left:1px solid #e2ddd6;display:flex;flex-direction:column;overflow:hidden}
+#ref-panel{width:360px;flex-shrink:0;background:#fff;border-left:1px solid #e2ddd6;display:flex;flex-direction:column;overflow:hidden}
 #ref-panel.hidden{display:none}
 #ref-panel-head{padding:7px 10px;border-bottom:1px solid #e2ddd6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:4px}
 #ref-panel-head span{font-size:11px;font-weight:500;color:#8a847c;text-transform:uppercase;letter-spacing:.5px}
@@ -391,7 +391,7 @@ function szCanvas(){render();}
 // RENDER
 function render(){
   // Canvas size: use window dimensions (always available)
-  var refW=document.getElementById('ref-panel').classList.contains('hidden')?0:240;
+  var refW=document.getElementById('ref-panel').classList.contains('hidden')?0:360;
   var aW=window.innerWidth-230-refW;
   var aH=window.innerHeight-42-24-26;
   if(aW<100)aW=800; if(aH<100)aH=500;
@@ -1923,43 +1923,57 @@ function updRefPanel(imgSrc){
   setTimeout(function(){refZoomFit();refDrawRef();},80);
 }
 
+function refGetImageSize(){
+  if(!refSrc)return[100,100];
+  var iw=refSrc.naturalWidth,ih=refSrc.naturalHeight;
+  if(!iw||iw<2){iw=refSrc.width||100;}
+  if(!ih||ih<2){ih=refSrc.height||100;}
+  return[iw,ih];
+}
+
 function refDrawRef(){
   if(!refSrc)return;
   var vc=document.getElementById('ref-view-canvas');
   var va=document.getElementById('ref-view-area');
-  var W=va.offsetWidth||200, H=va.offsetHeight||300;
-  vc.width=W; vc.height=H;
+  var W=va.offsetWidth||300, H=va.offsetHeight||400;
+  if(vc.width!==W||vc.height!==H){vc.width=W;vc.height=H;}
   var ctx2=vc.getContext('2d');
-  ctx2.fillStyle='#e8e4dc'; ctx2.fillRect(0,0,W,H);
-  ctx2.imageSmoothingEnabled=(refZL<2);
-  var iw=refSrc.naturalWidth||refSrc.width||100;
-  var ih=refSrc.naturalHeight||refSrc.height||100;
-  var sx=-refVX/refZL, sy=-refVY/refZL;
-  var sw=W/refZL, sh=H/refZL;
-  ctx2.drawImage(refSrc, Math.max(0,sx), Math.max(0,sy),
-    Math.min(iw-Math.max(0,sx), sw), Math.min(ih-Math.max(0,sy), sh),
-    Math.max(0,-sx*refZL), Math.max(0,-sy*refZL),
-    Math.min(W, (iw-Math.max(0,sx))*refZL), Math.min(H, (ih-Math.max(0,sy))*refZL));
-  // cursor indicator when eyedrop active
-  if(refEyedrop){
-    vc.style.cursor='crosshair';
-  } else {
-    vc.style.cursor=refPanning?'grabbing':'grab';
-  }
+  ctx2.fillStyle='#e8e4dc';ctx2.fillRect(0,0,W,H);
+  var sz=refGetImageSize(),iw=sz[0],ih=sz[1];
+  ctx2.imageSmoothingEnabled=(refZL<3);
+  // refVX, refVY = canvas pixel position of image top-left
+  ctx2.drawImage(refSrc, refVX, refVY, iw*refZL, ih*refZL);
+  vc.style.cursor=refEyedrop?'crosshair':(refPanning?'grabbing':'grab');
 }
 
 function refZoomFit(){
   if(!refSrc)return;
   var va=document.getElementById('ref-view-area');
-  var W=va.offsetWidth||200, H=va.offsetHeight||300;
-  var iw=refSrc.naturalWidth||refSrc.width||100;
-  var ih=refSrc.naturalHeight||refSrc.height||100;
-  refZL=Math.min(W/iw, H/ih);
-  refVX=-(W-iw*refZL)/2; refVY=-(H-ih*refZL)/2;
+  var W=va.offsetWidth||300, H=va.offsetHeight||400;
+  var sz=refGetImageSize(),iw=sz[0],ih=sz[1];
+  refZL=Math.min(W/iw, H/ih)*0.95;
+  refVX=(W-iw*refZL)/2;
+  refVY=(H-ih*refZL)/2;
   refDrawRef();
 }
-function refZoomIn(){refZL=Math.min(refZL*1.4,20);refDrawRef();}
-function refZoomOut(){refZL=Math.max(refZL/1.4,0.05);refDrawRef();}
+function refZoomIn(){
+  var va=document.getElementById('ref-view-area');
+  var W=va.offsetWidth||300,H=va.offsetHeight||400;
+  var cx=W/2,cy=H/2,oldZL=refZL;
+  refZL=Math.min(refZL*1.35,20);
+  refVX=cx-(cx-refVX)*refZL/oldZL;
+  refVY=cy-(cy-refVY)*refZL/oldZL;
+  refDrawRef();
+}
+function refZoomOut(){
+  var va=document.getElementById('ref-view-area');
+  var W=va.offsetWidth||300,H=va.offsetHeight||400;
+  var cx=W/2,cy=H/2,oldZL=refZL;
+  refZL=Math.max(refZL/1.35,0.05);
+  refVX=cx-(cx-refVX)*refZL/oldZL;
+  refVY=cy-(cy-refVY)*refZL/oldZL;
+  refDrawRef();
+}
 
 function toggleRefEyedrop(){
   refEyedrop=!refEyedrop;
@@ -1972,15 +1986,15 @@ function toggleRefEyedrop(){
 
 function refGetPixelColor(canvasX, canvasY){
   if(!refSrc)return null;
-  var va=document.getElementById('ref-view-area');
-  var iw=refSrc.naturalWidth||refSrc.width||100;
-  var ih=refSrc.naturalHeight||refSrc.height||100;
-  var imgX=(canvasX+refVX)/refZL;
-  var imgY=(canvasY+refVY)/refZL;
-  if(imgX<0||imgX>=iw||imgY<0||imgY>=ih)return null;
+  var sz=refGetImageSize(),iw=sz[0],ih=sz[1];
+  // canvas→image: ix = (cx - refVX) / refZL
+  var ix=(canvasX-refVX)/refZL;
+  var iy=(canvasY-refVY)/refZL;
+  if(ix<0||ix>=iw||iy<0||iy>=ih)return null;
   var tmp=document.createElement('canvas');tmp.width=iw;tmp.height=ih;
   var tx=tmp.getContext('2d');tx.drawImage(refSrc,0,0,iw,ih);
-  var d=tx.getImageData(Math.floor(imgX),Math.floor(imgY),1,1).data;
+  var d=tx.getImageData(Math.floor(ix),Math.floor(iy),1,1).data;
+  if(d[3]<10)return null;
   return r2h(d[0],d[1],d[2]);
 }
 
@@ -2007,45 +2021,55 @@ function refAddToPalette(){
   setTimeout(function(){b.textContent=orig;b.classList.remove('pr');},1500);
 }
 
-// Ref panel mouse events
+// Ref panel mouse/wheel events
 (function(){
   var va=document.getElementById('ref-view-area');
+
   va.addEventListener('wheel',function(e){
     e.preventDefault();
     var rc=va.getBoundingClientRect();
     var mx=e.clientX-rc.left, my=e.clientY-rc.top;
     var oldZL=refZL;
-    refZL=Math.max(0.05,Math.min(20,refZL*(e.deltaY<0?1.2:0.83)));
-    refVX=refVX+mx*(1-refZL/oldZL);
-    refVY=refVY+my*(1-refZL/oldZL);
+    refZL=Math.max(0.05,Math.min(20,refZL*(e.deltaY<0?1.18:0.85)));
+    // keep point under cursor fixed: cx = refVX + ix*ZL → refVX = cx - ix*newZL = cx - (cx-oldVX)/oldZL*newZL
+    refVX=mx-(mx-refVX)*refZL/oldZL;
+    refVY=my-(my-refVY)*refZL/oldZL;
     refDrawRef();
   },{passive:false});
+
   va.addEventListener('mousedown',function(e){
     if(refEyedrop){
       var rc=va.getBoundingClientRect();
       var hex=refGetPixelColor(e.clientX-rc.left, e.clientY-rc.top);
-      if(hex){refShowColor(hex);}
+      if(hex){
+        refShowColor(hex);
+        // auto turn off eyedrop after pick
+        refEyedrop=false;
+        document.getElementById('ref-eyedrop-btn').classList.remove('act');
+        document.getElementById('ref-hint').textContent='Scroll=ซูม | ลาก=เลื่อน | 💉=ดูดสี';
+        refDrawRef();
+      }
       return;
     }
-    refPanning=true; refPanSt={x:e.clientX,y:e.clientY,vx:refVX,vy:refVY};
+    refPanning=true;
+    refPanSt={x:e.clientX,y:e.clientY,vx:refVX,vy:refVY};
     va.style.cursor='grabbing';
   });
+
   va.addEventListener('mousemove',function(e){
     var rc=va.getBoundingClientRect();
+    var cx=e.clientX-rc.left, cy=e.clientY-rc.top;
     if(refPanning&&refPanSt){
-      refVX=refPanSt.vx-(e.clientX-refPanSt.x);
-      refVY=refPanSt.vy-(e.clientY-refPanSt.y);
+      // FIXED: drag right → image moves right (+)
+      refVX=refPanSt.vx+(e.clientX-refPanSt.x);
+      refVY=refPanSt.vy+(e.clientY-refPanSt.y);
       refDrawRef();
     }
-    if(refEyedrop){
-      var hex=refGetPixelColor(e.clientX-rc.left, e.clientY-rc.top);
-      if(hex)refShowColor(hex);
-    } else if(!refPanning){
-      // show color under cursor passively
-      var hex2=refGetPixelColor(e.clientX-rc.left, e.clientY-rc.top);
-      if(hex2)refShowColor(hex2);
-    }
+    // Show color under cursor always
+    var hex=refGetPixelColor(cx,cy);
+    if(hex)refShowColor(hex);
   });
+
   va.addEventListener('mouseup',function(){refPanning=false;refDrawRef();});
   va.addEventListener('mouseleave',function(){refPanning=false;});
 })();
