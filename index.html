@@ -229,7 +229,7 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
         </div>
         <button class="ref-tb-btn" id="ref-add-btn" onclick="refAddToPalette()" style="margin-left:auto" title="เพิ่มสีนี้เข้า Palette">+ Palette</button>
       </div>
-      <div style="font-size:10px;color:#8a847c" id="ref-hint">เลื่อน Scroll เพื่อซูม | ลาก เพื่อเลื่อน | 💉 เพื่อดูดสี</div>
+      <div style="font-size:10px;color:#8a847c" id="ref-hint">Scroll=ซูม | ลาก=เลื่อน | คลิก=ดูสี | 💉=ดูดสีเข้า Palette</div>
     </div>
   </div>
 </div>
@@ -688,6 +688,7 @@ function loadRef(f){
       document.getElementById('rimg').src=ev.target.result;
       document.getElementById('rimg').style.display='block';
       document.getElementById('rbtns').style.display='block';
+      rebuildRefPixCanvas();
       updRefPanel(ev.target.result);
       cvtRef();
     };
@@ -1979,23 +1980,34 @@ function toggleRefEyedrop(){
   refEyedrop=!refEyedrop;
   document.getElementById('ref-eyedrop-btn').classList.toggle('act',refEyedrop);
   document.getElementById('ref-hint').textContent=refEyedrop?
-    '💉 คลิกจุดในภาพเพื่อดูดสีเข้า Palette':
-    'เลื่อน Scroll เพื่อซูม | ลาก เพื่อเลื่อน | 💉 เพื่อดูดสี';
+    '💉 คลิกจุดในภาพ → เพิ่มสีเข้า Palette ทันที':
+    'Scroll=ซูม | ลาก=เลื่อน | คลิก=ดูสี | 💉=ดูดสีเข้า Palette';
   refDrawRef();
 }
 
-function refGetPixelColor(canvasX, canvasY){
-  if(!refSrc)return null;
+// Cached offscreen canvas for pixel reading (rebuilt when refSrc changes)
+var refPixCanvas=null, refPixCtx=null;
+
+function rebuildRefPixCanvas(){
+  if(!refSrc)return;
   var sz=refGetImageSize(),iw=sz[0],ih=sz[1];
-  // canvas→image: ix = (cx - refVX) / refZL
+  refPixCanvas=document.createElement('canvas');
+  refPixCanvas.width=iw; refPixCanvas.height=ih;
+  refPixCtx=refPixCanvas.getContext('2d');
+  refPixCtx.drawImage(refSrc,0,0,iw,ih);
+}
+
+function refGetPixelColor(canvasX, canvasY){
+  if(!refSrc||!refPixCtx)return null;
+  var sz=refGetImageSize(),iw=sz[0],ih=sz[1];
   var ix=(canvasX-refVX)/refZL;
   var iy=(canvasY-refVY)/refZL;
   if(ix<0||ix>=iw||iy<0||iy>=ih)return null;
-  var tmp=document.createElement('canvas');tmp.width=iw;tmp.height=ih;
-  var tx=tmp.getContext('2d');tx.drawImage(refSrc,0,0,iw,ih);
-  var d=tx.getImageData(Math.floor(ix),Math.floor(iy),1,1).data;
-  if(d[3]<10)return null;
-  return r2h(d[0],d[1],d[2]);
+  try{
+    var d=refPixCtx.getImageData(Math.floor(ix),Math.floor(iy),1,1).data;
+    if(d[3]<10)return null;
+    return r2h(d[0],d[1],d[2]);
+  }catch(e){return null;}
 }
 
 function refShowColor(hex){
@@ -2006,24 +2018,40 @@ function refShowColor(hex){
   document.getElementById('ref-swatch').style.background=hex;
   document.getElementById('ref-hex').textContent=hex.toUpperCase();
   document.getElementById('ref-dmc').textContent='≈ DMC '+dmc.num+' '+dmc.name;
+  // Update + Palette button state
+  var inPal=palette.some(function(p){return p.toLowerCase()===hex.toLowerCase();});
+  var b=document.getElementById('ref-add-btn');
+  if(inPal){b.textContent='✓ ใน Palette แล้ว';b.style.opacity='0.5';}
+  else{b.textContent='+ Palette';b.style.opacity='1';}
 }
 
 function refAddToPalette(){
   if(!refLastColor)return;
-  // check if already in palette
-  var exists=palette.indexOf(refLastColor);
-  if(exists>=0){SI=exists;updPal();return;}
+  var hex=refLastColor.toLowerCase();
+  // find case-insensitive match
+  var exists=-1;
+  for(var i=0;i<palette.length;i++){if(palette[i].toLowerCase()===hex){exists=i;break;}}
+  if(exists>=0){
+    SI=exists; updPal();
+    var b=document.getElementById('ref-add-btn');
+    b.textContent='✓ เลือกแล้ว!'; b.classList.add('pr');
+    setTimeout(function(){refShowColor(refLastColor);b.classList.remove('pr');},1200);
+    return;
+  }
   palette.push(refLastColor);
   SI=palette.length-1;
   updPal();
   var b=document.getElementById('ref-add-btn');
-  var orig=b.textContent; b.textContent='✓ Added!'; b.classList.add('pr');
-  setTimeout(function(){b.textContent=orig;b.classList.remove('pr');},1500);
+  b.textContent='✓ เพิ่มแล้ว!'; b.classList.add('pr');
+  setTimeout(function(){
+    b.textContent='✓ ใน Palette แล้ว'; b.classList.remove('pr'); b.style.opacity='0.5';
+  },1200);
 }
 
 // Ref panel mouse/wheel events
 (function(){
   var va=document.getElementById('ref-view-area');
+  var didPan=false; // track if mousedown resulted in a drag
 
   va.addEventListener('wheel',function(e){
     e.preventDefault();
@@ -2031,26 +2059,13 @@ function refAddToPalette(){
     var mx=e.clientX-rc.left, my=e.clientY-rc.top;
     var oldZL=refZL;
     refZL=Math.max(0.05,Math.min(20,refZL*(e.deltaY<0?1.18:0.85)));
-    // keep point under cursor fixed: cx = refVX + ix*ZL → refVX = cx - ix*newZL = cx - (cx-oldVX)/oldZL*newZL
     refVX=mx-(mx-refVX)*refZL/oldZL;
     refVY=my-(my-refVY)*refZL/oldZL;
     refDrawRef();
   },{passive:false});
 
   va.addEventListener('mousedown',function(e){
-    if(refEyedrop){
-      var rc=va.getBoundingClientRect();
-      var hex=refGetPixelColor(e.clientX-rc.left, e.clientY-rc.top);
-      if(hex){
-        refShowColor(hex);
-        // auto turn off eyedrop after pick
-        refEyedrop=false;
-        document.getElementById('ref-eyedrop-btn').classList.remove('act');
-        document.getElementById('ref-hint').textContent='Scroll=ซูม | ลาก=เลื่อน | 💉=ดูดสี';
-        refDrawRef();
-      }
-      return;
-    }
+    didPan=false;
     refPanning=true;
     refPanSt={x:e.clientX,y:e.clientY,vx:refVX,vy:refVY};
     va.style.cursor='grabbing';
@@ -2060,18 +2075,39 @@ function refAddToPalette(){
     var rc=va.getBoundingClientRect();
     var cx=e.clientX-rc.left, cy=e.clientY-rc.top;
     if(refPanning&&refPanSt){
-      // FIXED: drag right → image moves right (+)
-      refVX=refPanSt.vx+(e.clientX-refPanSt.x);
-      refVY=refPanSt.vy+(e.clientY-refPanSt.y);
+      var dx=e.clientX-refPanSt.x, dy=e.clientY-refPanSt.y;
+      if(Math.abs(dx)>3||Math.abs(dy)>3)didPan=true;
+      refVX=refPanSt.vx+dx;
+      refVY=refPanSt.vy+dy;
       refDrawRef();
     }
-    // Show color under cursor always
+    // always show color under cursor
     var hex=refGetPixelColor(cx,cy);
     if(hex)refShowColor(hex);
   });
 
-  va.addEventListener('mouseup',function(){refPanning=false;refDrawRef();});
-  va.addEventListener('mouseleave',function(){refPanning=false;});
+  va.addEventListener('mouseup',function(e){
+    refPanning=false;
+    refDrawRef();
+    if(!didPan){
+      // Click (not drag) = pick color and add to palette immediately
+      var rc=va.getBoundingClientRect();
+      var hex=refGetPixelColor(e.clientX-rc.left, e.clientY-rc.top);
+      if(hex){
+        refShowColor(hex);
+        if(refEyedrop){
+          // eyedrop mode: add directly, turn off mode
+          refAddToPalette();
+          refEyedrop=false;
+          document.getElementById('ref-eyedrop-btn').classList.remove('act');
+          document.getElementById('ref-hint').textContent='Scroll=ซูม | ลาก=เลื่อน | คลิก=ดูสี | 💉=ดูดสีเข้า Palette';
+        }
+      }
+    }
+    didPan=false;
+  });
+
+  va.addEventListener('mouseleave',function(){refPanning=false;didPan=false;});
 })();
 
 function boot(){
