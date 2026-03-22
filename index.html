@@ -22,17 +22,22 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;font-size
 #canvas-area{flex:1;position:relative;overflow:hidden;background:#e8e4dc}
 #gc,#ov{position:absolute;top:0;left:0;image-rendering:pixelated;image-rendering:crisp-edges}
 #ov{pointer-events:none}
-#ref-panel{width:220px;flex-shrink:0;background:#fff;border-left:1px solid #e2ddd6;display:flex;flex-direction:column;overflow:hidden}
+#ref-panel{width:240px;flex-shrink:0;background:#fff;border-left:1px solid #e2ddd6;display:flex;flex-direction:column;overflow:hidden}
 #ref-panel.hidden{display:none}
-#ref-panel-head{padding:8px 10px;border-bottom:1px solid #e2ddd6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#ref-panel-head{padding:7px 10px;border-bottom:1px solid #e2ddd6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:4px}
 #ref-panel-head span{font-size:11px;font-weight:500;color:#8a847c;text-transform:uppercase;letter-spacing:.5px}
-#ref-panel-body{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px}
-#ref-orig-wrap{border:1px solid #e2ddd6;border-radius:6px;overflow:hidden;background:#f7f4ef}
-#ref-orig-wrap img{width:100%;display:block}
-#ref-orig-wrap .ref-label{font-size:10px;color:#8a847c;padding:4px 7px;background:#f7f4ef;border-top:1px solid #e2ddd6}
-#ref-zoom-wrap{border:1px solid #e2ddd6;border-radius:6px;overflow:hidden;background:#f7f4ef}
-#ref-zoom-canvas{width:100%;display:block;image-rendering:pixelated}
-#ref-zoom-wrap .ref-label{font-size:10px;color:#8a847c;padding:4px 7px;background:#f7f4ef;border-top:1px solid #e2ddd6}
+#ref-panel-body{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:0}
+#ref-view-area{flex:1;position:relative;overflow:hidden;background:#e8e4dc;cursor:grab}
+#ref-view-canvas{position:absolute;top:0;left:0;image-rendering:pixelated;image-rendering:crisp-edges}
+#ref-info-bar{padding:6px 8px;border-top:1px solid #e2ddd6;background:#f7f4ef;flex-shrink:0}
+#ref-info-bar .ref-color-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+#ref-info-bar .ref-swatch{width:22px;height:22px;border-radius:4px;border:1px solid #e2ddd6;flex-shrink:0}
+#ref-info-bar .ref-text{font-size:10px;line-height:1.4}
+#ref-info-bar .ref-hex{font-weight:600;font-family:monospace;font-size:11px}
+#ref-toolbar{padding:4px 6px;border-bottom:1px solid #e2ddd6;display:flex;align-items:center;gap:3px;flex-shrink:0;background:#fafaf8}
+.ref-tb-btn{padding:3px 7px;font-size:10px;font-family:'DM Sans',sans-serif;border:1px solid #e2ddd6;border-radius:5px;background:#fff;cursor:pointer;color:#1a1714;white-space:nowrap}
+.ref-tb-btn:hover{background:#f7f4ef}
+.ref-tb-btn.act{background:#2d6a4f;color:#fff;border-color:#2d6a4f}
 #color-replace-bar{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:6px 8px;font-size:11px;display:none;margin:4px 0}
 #color-replace-bar b{color:#856404}
 #statusbar{height:24px;background:#fff;border-top:1px solid #e2ddd6;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;font-size:11px;color:#8a847c}
@@ -201,27 +206,30 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
     <span>Reference Image</span>
     <button class="btn" onclick="toggleRefPanel()" style="padding:2px 7px;font-size:10px">✕</button>
   </div>
-  <div id="ref-panel-body">
-    <div id="ref-no-image" style="font-size:11px;color:#8a847c;text-align:center;padding:20px 0">
-      Upload an image in the sidebar to see it here
+  <div id="ref-toolbar">
+    <button class="ref-tb-btn" onclick="refZoomIn()" title="Zoom in">+</button>
+    <button class="ref-tb-btn" onclick="refZoomOut()" title="Zoom out">−</button>
+    <button class="ref-tb-btn" onclick="refZoomFit()" title="Fit">Fit</button>
+    <div style="flex:1"></div>
+    <button class="ref-tb-btn" id="ref-eyedrop-btn" onclick="toggleRefEyedrop()" title="ดูดสีจากภาพต้นฉบับ">💉 ดูดสี</button>
+  </div>
+  <div id="ref-no-image" style="font-size:11px;color:#8a847c;text-align:center;padding:30px 10px">
+    Upload an image in the sidebar to see it here
+  </div>
+  <div id="ref-panel-body" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+    <div id="ref-view-area">
+      <canvas id="ref-view-canvas"></canvas>
     </div>
-    <div id="ref-orig-wrap" style="display:none">
-      <img id="ref-panel-img" src="" alt="Original">
-      <div class="ref-label">Original Image</div>
-    </div>
-    <div id="ref-zoom-wrap" style="display:none">
-      <canvas id="ref-zoom-canvas" width="200" height="200"></canvas>
-      <div class="ref-label" id="ref-zoom-label">Zoomed area</div>
-    </div>
-    <div id="ref-color-info" style="display:none">
-      <div style="font-size:10px;font-weight:500;color:#8a847c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Color at cursor</div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div id="ref-hover-swatch" style="width:28px;height:28px;border-radius:4px;border:1px solid #e2ddd6;flex-shrink:0"></div>
-        <div>
-          <div id="ref-hover-hex" style="font-size:11px;font-weight:500;font-family:monospace"></div>
-          <div id="ref-hover-dmc" style="font-size:10px;color:#8a847c"></div>
+    <div id="ref-info-bar" style="display:none">
+      <div class="ref-color-row">
+        <div class="ref-swatch" id="ref-swatch"></div>
+        <div class="ref-text">
+          <div class="ref-hex" id="ref-hex">--</div>
+          <div style="color:#8a847c" id="ref-dmc">--</div>
         </div>
+        <button class="ref-tb-btn" id="ref-add-btn" onclick="refAddToPalette()" style="margin-left:auto" title="เพิ่มสีนี้เข้า Palette">+ Palette</button>
       </div>
+      <div style="font-size:10px;color:#8a847c" id="ref-hint">เลื่อน Scroll เพื่อซูม | ลาก เพื่อเลื่อน | 💉 เพื่อดูดสี</div>
     </div>
   </div>
 </div>
@@ -383,7 +391,7 @@ function szCanvas(){render();}
 // RENDER
 function render(){
   // Canvas size: use window dimensions (always available)
-  var refW=document.getElementById('ref-panel').classList.contains('hidden')?0:220;
+  var refW=document.getElementById('ref-panel').classList.contains('hidden')?0:240;
   var aW=window.innerWidth-230-refW;
   var aH=window.innerHeight-42-24-26;
   if(aW<100)aW=800; if(aH<100)aH=500;
@@ -512,8 +520,6 @@ area.addEventListener('mousemove',function(e){
   if(tool==='move'&&painting&&panSt){var ds=Math.max(.1,CELL*ZL);VX=Math.max(0,panSt.vx-(e.clientX-panSt.x)/ds);VY=Math.max(0,panSt.vy-(e.clientY-panSt.y)/ds);render();return;}
   if(tool==='select'&&selRect&&e.buttons){selRect.w=c-selRect.x+1;selRect.h=r-selRect.y+1;render();return;}
   if(painting&&(tool==='paint'||tool==='erase')){paintCell(c,r);render();}
-  // Update ref panel zoom when hovering over canvas
-  if(inB(c,r)&&!document.getElementById('ref-panel').classList.contains('hidden')){updRefZoom(c,r);}
 });
 area.addEventListener('mouseup',function(e){
   var p=getCell(e),c=p[0],r=p[1];
@@ -1893,49 +1899,156 @@ function cancelReplace(){
 }
 
 // โ"€โ"€โ"€ REFERENCE PANEL โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€โ"€
+var refZL=1, refVX=0, refVY=0, refPanning=false, refPanSt=null;
+var refEyedrop=false;
+var refLastColor=null;
+
 function toggleRefPanel(){
   var p=document.getElementById('ref-panel');
   p.classList.toggle('hidden');
   document.getElementById('btn-ref-panel').classList.toggle('act',!p.classList.contains('hidden'));
   render();
+  if(!p.classList.contains('hidden'))setTimeout(refZoomFit,50);
 }
+
 function updRefPanel(imgSrc){
   document.getElementById('ref-no-image').style.display='none';
-  document.getElementById('ref-orig-wrap').style.display='block';
-  document.getElementById('ref-panel-img').src=imgSrc;
+  document.getElementById('ref-panel-body').style.display='flex';
+  document.getElementById('ref-panel-body').style.flexDirection='column';
+  document.getElementById('ref-panel-body').style.flex='1';
+  document.getElementById('ref-panel-body').style.overflow='hidden';
   var p=document.getElementById('ref-panel');
   if(p.classList.contains('hidden')){p.classList.remove('hidden');document.getElementById('btn-ref-panel').classList.add('act');render();}
+  // init ref canvas
+  setTimeout(function(){refZoomFit();refDrawRef();},80);
 }
-function updRefZoom(col,row){
+
+function refDrawRef(){
   if(!refSrc)return;
-  var zw=document.getElementById('ref-zoom-wrap');
-  var zc=document.getElementById('ref-zoom-canvas');
-  zw.style.display='block';
-  var ZR=5;
-  var sw=ZR*2+1,sh=ZR*2+1;
-  zc.width=sw*8;zc.height=sh*8;
-  var sx=Math.max(0,col-ZR),sy=Math.max(0,row-ZR);
-  var sw2=Math.min(COLS,col+ZR+1)-sx;
-  var sh2=Math.min(ROWS,row+ZR+1)-sy;
-  var zx=zc.getContext('2d');
-  zx.fillStyle='#f7f4ef';zx.fillRect(0,0,zc.width,zc.height);
-  var tmp=document.createElement('canvas');tmp.width=COLS;tmp.height=ROWS;
-  var tx=tmp.getContext('2d');tx.drawImage(refSrc,0,0,COLS,ROWS);
-  zx.imageSmoothingEnabled=false;
-  zx.drawImage(tmp,sx,sy,sw2,sh2,0,0,sw2*8,sh2*8);
-  var cx2=(col-sx)*8+4,cy2=(row-sy)*8+4;
-  zx.strokeStyle='rgba(220,50,50,0.85)';zx.lineWidth=1.5;
-  zx.beginPath();zx.moveTo(cx2-7,cy2);zx.lineTo(cx2+7,cy2);zx.stroke();
-  zx.beginPath();zx.moveTo(cx2,cy2-7);zx.lineTo(cx2,cy2+7);zx.stroke();
-  document.getElementById('ref-zoom-label').textContent='ซูม: ตำแหน่ง ('+(col+1)+','+(row+1)+')';
-  var pdata=tx.getImageData(col,row,1,1).data;
-  var ph=r2h(pdata[0],pdata[1],pdata[2]);
-  var pdmc=nDMC(ph);
-  document.getElementById('ref-color-info').style.display='block';
-  document.getElementById('ref-hover-swatch').style.background=ph;
-  document.getElementById('ref-hover-hex').textContent=ph.toUpperCase();
-  document.getElementById('ref-hover-dmc').textContent='≈ DMC '+pdmc.num+' '+pdmc.name;
+  var vc=document.getElementById('ref-view-canvas');
+  var va=document.getElementById('ref-view-area');
+  var W=va.offsetWidth||200, H=va.offsetHeight||300;
+  vc.width=W; vc.height=H;
+  var ctx2=vc.getContext('2d');
+  ctx2.fillStyle='#e8e4dc'; ctx2.fillRect(0,0,W,H);
+  ctx2.imageSmoothingEnabled=(refZL<2);
+  var iw=refSrc.naturalWidth||refSrc.width||100;
+  var ih=refSrc.naturalHeight||refSrc.height||100;
+  var sx=-refVX/refZL, sy=-refVY/refZL;
+  var sw=W/refZL, sh=H/refZL;
+  ctx2.drawImage(refSrc, Math.max(0,sx), Math.max(0,sy),
+    Math.min(iw-Math.max(0,sx), sw), Math.min(ih-Math.max(0,sy), sh),
+    Math.max(0,-sx*refZL), Math.max(0,-sy*refZL),
+    Math.min(W, (iw-Math.max(0,sx))*refZL), Math.min(H, (ih-Math.max(0,sy))*refZL));
+  // cursor indicator when eyedrop active
+  if(refEyedrop){
+    vc.style.cursor='crosshair';
+  } else {
+    vc.style.cursor=refPanning?'grabbing':'grab';
+  }
 }
+
+function refZoomFit(){
+  if(!refSrc)return;
+  var va=document.getElementById('ref-view-area');
+  var W=va.offsetWidth||200, H=va.offsetHeight||300;
+  var iw=refSrc.naturalWidth||refSrc.width||100;
+  var ih=refSrc.naturalHeight||refSrc.height||100;
+  refZL=Math.min(W/iw, H/ih);
+  refVX=-(W-iw*refZL)/2; refVY=-(H-ih*refZL)/2;
+  refDrawRef();
+}
+function refZoomIn(){refZL=Math.min(refZL*1.4,20);refDrawRef();}
+function refZoomOut(){refZL=Math.max(refZL/1.4,0.05);refDrawRef();}
+
+function toggleRefEyedrop(){
+  refEyedrop=!refEyedrop;
+  document.getElementById('ref-eyedrop-btn').classList.toggle('act',refEyedrop);
+  document.getElementById('ref-hint').textContent=refEyedrop?
+    '💉 คลิกจุดในภาพเพื่อดูดสีเข้า Palette':
+    'เลื่อน Scroll เพื่อซูม | ลาก เพื่อเลื่อน | 💉 เพื่อดูดสี';
+  refDrawRef();
+}
+
+function refGetPixelColor(canvasX, canvasY){
+  if(!refSrc)return null;
+  var va=document.getElementById('ref-view-area');
+  var iw=refSrc.naturalWidth||refSrc.width||100;
+  var ih=refSrc.naturalHeight||refSrc.height||100;
+  var imgX=(canvasX+refVX)/refZL;
+  var imgY=(canvasY+refVY)/refZL;
+  if(imgX<0||imgX>=iw||imgY<0||imgY>=ih)return null;
+  var tmp=document.createElement('canvas');tmp.width=iw;tmp.height=ih;
+  var tx=tmp.getContext('2d');tx.drawImage(refSrc,0,0,iw,ih);
+  var d=tx.getImageData(Math.floor(imgX),Math.floor(imgY),1,1).data;
+  return r2h(d[0],d[1],d[2]);
+}
+
+function refShowColor(hex){
+  if(!hex)return;
+  refLastColor=hex;
+  var dmc=nDMC(hex);
+  document.getElementById('ref-info-bar').style.display='block';
+  document.getElementById('ref-swatch').style.background=hex;
+  document.getElementById('ref-hex').textContent=hex.toUpperCase();
+  document.getElementById('ref-dmc').textContent='≈ DMC '+dmc.num+' '+dmc.name;
+}
+
+function refAddToPalette(){
+  if(!refLastColor)return;
+  // check if already in palette
+  var exists=palette.indexOf(refLastColor);
+  if(exists>=0){SI=exists;updPal();return;}
+  palette.push(refLastColor);
+  SI=palette.length-1;
+  updPal();
+  var b=document.getElementById('ref-add-btn');
+  var orig=b.textContent; b.textContent='✓ Added!'; b.classList.add('pr');
+  setTimeout(function(){b.textContent=orig;b.classList.remove('pr');},1500);
+}
+
+// Ref panel mouse events
+(function(){
+  var va=document.getElementById('ref-view-area');
+  va.addEventListener('wheel',function(e){
+    e.preventDefault();
+    var rc=va.getBoundingClientRect();
+    var mx=e.clientX-rc.left, my=e.clientY-rc.top;
+    var oldZL=refZL;
+    refZL=Math.max(0.05,Math.min(20,refZL*(e.deltaY<0?1.2:0.83)));
+    refVX=refVX+mx*(1-refZL/oldZL);
+    refVY=refVY+my*(1-refZL/oldZL);
+    refDrawRef();
+  },{passive:false});
+  va.addEventListener('mousedown',function(e){
+    if(refEyedrop){
+      var rc=va.getBoundingClientRect();
+      var hex=refGetPixelColor(e.clientX-rc.left, e.clientY-rc.top);
+      if(hex){refShowColor(hex);}
+      return;
+    }
+    refPanning=true; refPanSt={x:e.clientX,y:e.clientY,vx:refVX,vy:refVY};
+    va.style.cursor='grabbing';
+  });
+  va.addEventListener('mousemove',function(e){
+    var rc=va.getBoundingClientRect();
+    if(refPanning&&refPanSt){
+      refVX=refPanSt.vx-(e.clientX-refPanSt.x);
+      refVY=refPanSt.vy-(e.clientY-refPanSt.y);
+      refDrawRef();
+    }
+    if(refEyedrop){
+      var hex=refGetPixelColor(e.clientX-rc.left, e.clientY-rc.top);
+      if(hex)refShowColor(hex);
+    } else if(!refPanning){
+      // show color under cursor passively
+      var hex2=refGetPixelColor(e.clientX-rc.left, e.clientY-rc.top);
+      if(hex2)refShowColor(hex2);
+    }
+  });
+  va.addEventListener('mouseup',function(){refPanning=false;refDrawRef();});
+  va.addEventListener('mouseleave',function(){refPanning=false;});
+})();
 
 function boot(){
   grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
