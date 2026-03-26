@@ -188,6 +188,8 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 <button class="tb-btn" id="t-select" onclick="setTool('select',this)">Select</button>
 <button class="tb-btn" id="t-replace" onclick="setTool('replace',this)" title="Click a color in canvas to replace all pixels of that color">Replace Color</button>
 <div style="width:1px;height:18px;background:#e2ddd6;margin:0 2px;flex-shrink:0"></div>
+<button class="tb-btn" onclick="undo()" title="Undo last action (Ctrl+Z)" style="color:#c0392b;font-weight:600">&#8617; Undo</button>
+<div style="width:1px;height:18px;background:#e2ddd6;margin:0 2px;flex-shrink:0"></div>
 <button class="tb-btn" onclick="doZoom(1.25)">+</button>
 <div class="zi" id="zpct">100%</div>
 <button class="tb-btn" onclick="doZoom(0.8)">-</button>
@@ -888,13 +890,38 @@ function cvtRef(){
     var r2=Math.floor(k/COLS),c2=k%COLS;return !bgMask[r2][c2];
   });
 
-  // Outline counts as 1 of the nc slots
-  var palNc=hasOutline?Math.max(1,autoNc-1):autoNc;
+  // ── White color preservation ────────────────────────────────────────────
+  // Count near-white pixels (lum > 220) in foreground
+  var whitePx=0, totalFgPx=0;
+  for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++){
+    if(bgMask[i][j])continue;
+    totalFgPx++;
+    var px2=pg[i][j];
+    var lum2=0.299*px2[0]+0.587*px2[1]+0.114*px2[2];
+    if(lum2>220&&px2[0]>200&&px2[1]>200&&px2[2]>200)whitePx++;
+  }
+  // Reserve white slot if >1% of foreground is near-white
+  var reserveWhite=(totalFgPx>0&&whitePx/totalFgPx>0.01);
+  // Also reserve if any bright highlight exists (e.g. eye whites)
+  if(!reserveWhite&&whitePx>20)reserveWhite=true;
+
+  // Slots: outline(1) + white(1) + rest
+  var slotsUsed=(hasOutline?1:0)+(reserveWhite?1:0);
+  var palNc=Math.max(1, autoNc-slotsUsed);
   palNc=Math.max(1,palNc);
-  var ctrs=medCut(fg,palNc);
+
+  // Exclude near-white from fg clustering so white cluster doesn't get wasted
+  var fgNoWhite=fg.filter(function(px2){
+    var lum2=0.299*px2[0]+0.587*px2[1]+0.114*px2[2];
+    return !(lum2>215&&px2[0]>200&&px2[1]>200&&px2[2]>200);
+  });
+  if(fgNoWhite.length<palNc*3)fgNoWhite=fg; // fallback if too few
+
+  var ctrs=medCut(fgNoWhite,palNc);
   var fgPalette=ctrs.map(function(c){return r2h(Math.round(c[0]),Math.round(c[1]),Math.round(c[2]));});
 
-  // Outline = first slot (counts toward nc total)
+  // Build final palette: outline first, then white, then fg colors
+  if(reserveWhite)fgPalette.unshift('#f8f8f8'); // add white at front of fg
   if(hasOutline){
     var outlineHex=r2h(outlineColor[0],outlineColor[1],outlineColor[2]);
     palette=[outlineHex].concat(fgPalette);
