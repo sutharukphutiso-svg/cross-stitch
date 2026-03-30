@@ -92,13 +92,16 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 <div id="sb-body">
 
 <div class="sec"><div class="sec-t">Stitch Size</div><div class="sec-b">
-<div class="ctrl"><div class="cl"><span>W x H</span><span class="cv" id="szv">40 x 40</span></div>
-<input type="range" id="sz" min="10" max="200" value="40" step="5" oninput="onSz()"></div>
+<div class="ctrl"><div class="cl"><span>Width</span><span class="cv" id="szwv">40</span></div>
+<input type="range" id="szw" min="10" max="300" value="40" step="5" oninput="onSzW()"></div>
+<div class="ctrl"><div class="cl"><span>Height</span><span class="cv" id="szhv">40</span></div>
+<input type="range" id="szh" min="10" max="300" value="40" step="5" oninput="onSzH()"></div>
+<div class="cb-row"><input type="checkbox" id="szlock" checked><label for="szlock">Lock W=H</label></div>
 </div></div>
 
 <div class="sec"><div class="sec-t">Max Colors</div><div class="sec-b">
 <div class="ctrl"><div class="cl"><span>Colors</span><span class="cv" id="ncv">16</span></div>
-<input type="range" id="nc" min="2" max="32" value="16" step="1" oninput="onNc()"></div>
+<input type="range" id="nc" min="2" max="60" value="16" step="1" oninput="onNc()"></div>
 </div></div>
 
 <div class="sec"><div class="sec-t">Background</div><div class="sec-b">
@@ -859,6 +862,7 @@ function cvtRef(){
   var autoNc=nc; // always start from user value
   if(nc>=20){
     // Only auto-boost if user left nc at a high default
+    if(totalStitches<30000)autoNc=Math.min(nc,autoNc+4);
     if(totalStitches<15000)autoNc=Math.min(nc,autoNc+4);
     if(totalStitches<8000) autoNc=Math.min(nc,autoNc+2);
   }
@@ -1257,7 +1261,31 @@ function updSt(){
   var ct=parseInt(document.getElementById('fab').value);
   document.getElementById('fcm').textContent=(COLS/ct*2.54).toFixed(1)+' x '+(ROWS/ct*2.54).toFixed(1)+' cm';
 }
-function onSz(){var v=parseInt(document.getElementById('sz').value);COLS=v;ROWS=v;document.getElementById('szv').textContent=v+' x '+v;grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});VX=0;VY=0;szCanvas();updSt();fitZoom();}
+function onSzW(){
+  var v=parseInt(document.getElementById('szw').value);
+  document.getElementById('szwv').textContent=v;
+  if(document.getElementById('szlock').checked){
+    document.getElementById('szh').value=v;
+    document.getElementById('szhv').textContent=v;
+    ROWS=v;
+  }
+  COLS=v;
+  grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
+  VX=0;VY=0;szCanvas();updSt();fitZoom();
+}
+function onSzH(){
+  var v=parseInt(document.getElementById('szh').value);
+  document.getElementById('szhv').textContent=v;
+  if(document.getElementById('szlock').checked){
+    document.getElementById('szw').value=v;
+    document.getElementById('szwv').textContent=v;
+    COLS=v;
+  }
+  ROWS=v;
+  grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
+  VX=0;VY=0;szCanvas();updSt();fitZoom();
+}
+function onSz(){onSzW();}
 function onNc(){document.getElementById('ncv').textContent=document.getElementById('nc').value;if(refSrc)cvtRef();}
 function onBg(){document.getElementById('bgv').textContent=document.getElementById('bg').value;if(refSrc)cvtRef();}
 
