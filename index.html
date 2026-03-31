@@ -739,18 +739,34 @@ function cvtRef(){
   // C_white = alpha * C_fg + (1-alpha) * 255  =>  alpha = (255 - C_white) / (255 - C_black + epsilon)
   // alpha=1 means fully opaque, alpha=0 means fully transparent
   function estimateAlpha(rW,gW,bW,rB,gB,bB){
-    var aR=(255-rW)/Math.max(1,255-rB);
-    var aG=(255-gW)/Math.max(1,255-gB);
-    var aB=(255-bW)/Math.max(1,255-bB);
-    // Clamp to [0,1]
-    aR=Math.min(1,Math.max(0,aR));
-    aG=Math.min(1,Math.max(0,aG));
-    aB=Math.min(1,Math.max(0,aB));
-    return (aR+aG+aB)/3;
+    // If pixel is bright on BOTH backgrounds = it's a genuinely bright/white opaque pixel
+    // Not transparent at all - return alpha=1
+    var lumB=0.299*rB+0.587*gB+0.114*bB;
+    if(lumB>180)return 1.0; // bright on black bg = opaque bright/white pixel
+
+    // If pixel is very dark on black bg = nearly fully transparent
+    // (alpha compositing: dark on black bg means very little foreground contribution)
+    var lumW=0.299*rW+0.587*gW+0.114*bW;
+    if(lumB<8&&lumW>240)return 0.0; // truly transparent
+
+    // General case: estimate alpha from compositing formula
+    // C_white = alpha*C_fg + (1-alpha)*255
+    // C_black = alpha*C_fg
+    // => alpha = C_black / C_fg, but C_fg = C_black/alpha
+    // Simpler: alpha ≈ (C_white - 255) / (C_black - 255)  [rearranged]
+    // Or use: alpha = 1 - (C_white - C_black) / 255
+    var dR=rW-rB, dG=gW-gB, dB2=bW-bB;
+    // diff close to 255 = transparent (white bg makes it white, black bg makes it black)
+    // diff close to 0 = opaque (same color on both bgs)
+    var avgDiff=(dR+dG+dB2)/3;
+    var alpha=1-(avgDiff/255);
+    return Math.min(1,Math.max(0,alpha));
   }
 
   // Recover true foreground color from alpha-composited result
+  // For alpha≈1: fg color ≈ pixel color on black bg (most accurate)
   function recoverFg(cW,cB,alpha){
+    if(alpha>=0.95)return cB; // fully opaque: true color = color on black bg
     if(alpha<0.001)return 128;
     // C_white = alpha*C_fg + (1-alpha)*255  =>  C_fg = (C_white - (1-alpha)*255) / alpha
     var fg=(cW-(1-alpha)*255)/alpha;
