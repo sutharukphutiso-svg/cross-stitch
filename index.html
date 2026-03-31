@@ -97,6 +97,8 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 <div class="ctrl"><div class="cl"><span>Height</span><span class="cv" id="szhv">40</span></div>
 <input type="range" id="szh" min="10" max="300" value="40" step="5" oninput="onSzH()"></div>
 <div class="cb-row"><input type="checkbox" id="szlock" checked><label for="szlock">Lock W=H</label></div>
+<div class="btn-r" style="margin-top:5px"><button class="btn pr" style="width:100%;font-size:11px" onclick="matchImageRatio()" title="ปรับ W/H ให้ตรงกับ aspect ratio ของภาพต้นฉบับ">📐 Match image ratio</button></div>
+<div id="ratio-info" style="font-size:10px;color:#8a847c;margin-top:3px;text-align:center;display:none"></div>
 </div></div>
 
 <div class="sec"><div class="sec-t">Max Colors</div><div class="sec-b">
@@ -1351,6 +1353,57 @@ function onSzH(){
   VX=0;VY=0;szCanvas();updSt();fitZoom();
 }
 function onSz(){onSzW();}
+
+function matchImageRatio(){
+  if(!refSrc){
+    alert('กรุณาโหลดภาพต้นฉบับก่อน');return;
+  }
+  var iw=refSrc.naturalWidth||refSrc.width;
+  var ih=refSrc.naturalHeight||refSrc.height;
+  if(!iw||!ih)return;
+
+  // Use current larger dimension as the base, then compute the other
+  var curW=parseInt(document.getElementById('szw').value);
+  var curH=parseInt(document.getElementById('szh').value);
+  var base=Math.max(curW,curH);
+
+  var ratio=iw/ih; // e.g. 0.75 for portrait 3:4
+  var newW,newH;
+  if(iw>=ih){
+    // Landscape: base on width
+    newW=base;
+    newH=Math.round(base/ratio/5)*5; // round to nearest 5
+  } else {
+    // Portrait: base on height
+    newH=base;
+    newW=Math.round(base*ratio/5)*5;
+  }
+  // Clamp to slider range
+  newW=Math.min(300,Math.max(10,newW));
+  newH=Math.min(300,Math.max(10,newH));
+
+  // Uncheck lock so W≠H is allowed
+  document.getElementById('szlock').checked=false;
+
+  // Apply W
+  document.getElementById('szw').value=newW;
+  document.getElementById('szwv').textContent=newW;
+  COLS=newW;
+
+  // Apply H
+  document.getElementById('szh').value=newH;
+  document.getElementById('szhv').textContent=newH;
+  ROWS=newH;
+
+  // Show info
+  var ri=document.getElementById('ratio-info');
+  ri.style.display='block';
+  ri.textContent='ภาพต้นฉบับ '+iw+'×'+ih+' → pattern '+newW+'×'+newH;
+
+  grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
+  VX=0;VY=0;szCanvas();updSt();fitZoom();
+  if(refSrc)cvtRef();
+}
 function onNc(){document.getElementById('ncv').textContent=document.getElementById('nc').value;if(refSrc)cvtRef();}
 function onBg(){document.getElementById('bgv').textContent=document.getElementById('bg').value;if(refSrc)cvtRef();}
 
