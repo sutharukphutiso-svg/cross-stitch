@@ -93,9 +93,9 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 
 <div class="sec"><div class="sec-t">Stitch Size</div><div class="sec-b">
 <div class="ctrl"><div class="cl"><span>Width</span><span class="cv" id="szwv">40</span></div>
-<input type="range" id="szw" min="10" max="300" value="40" step="5" oninput="onSzW()"></div>
+<input type="range" id="szw" min="10" max="500" value="40" step="5" oninput="onSzW()"></div>
 <div class="ctrl"><div class="cl"><span>Height</span><span class="cv" id="szhv">40</span></div>
-<input type="range" id="szh" min="10" max="300" value="40" step="5" oninput="onSzH()"></div>
+<input type="range" id="szh" min="10" max="500" value="40" step="5" oninput="onSzH()"></div>
 <div class="cb-row"><input type="checkbox" id="szlock" checked><label for="szlock">Lock W=H</label></div>
 <div class="btn-r" style="margin-top:5px"><button class="btn pr" style="width:100%;font-size:11px" onclick="matchImageRatio()" title="ปรับ W/H ให้ตรงกับ aspect ratio ของภาพต้นฉบับ">📐 Match image ratio</button></div>
 <div id="ratio-info" style="font-size:10px;color:#8a847c;margin-top:3px;text-align:center;display:none"></div>
@@ -103,7 +103,7 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 
 <div class="sec"><div class="sec-t">Max Colors</div><div class="sec-b">
 <div class="ctrl"><div class="cl"><span>Colors</span><span class="cv" id="ncv">16</span></div>
-<input type="range" id="nc" min="2" max="60" value="16" step="1" oninput="onNc()"></div>
+<input type="range" id="nc" min="2" max="100" value="16" step="1" oninput="onNc()"></div>
 </div></div>
 
 <div class="sec"><div class="sec-t">Background</div><div class="sec-b">
@@ -1255,8 +1255,8 @@ function medCut(pixels,k){
     return cut(sorted.slice(0,mid),d-1).concat(cut(sorted.slice(mid),d-1));
   }
 
-  var samp=labPix.length>4000?labPix.filter(function(_,i){
-    return i%Math.floor(labPix.length/4000)===0;
+  var samp=labPix.length>8000?labPix.filter(function(_,i){
+    return i%Math.floor(labPix.length/8000)===0;
   }):labPix;
 
   var dep=Math.ceil(Math.log2(Math.max(k,2)));
