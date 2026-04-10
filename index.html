@@ -1213,101 +1213,149 @@ function lab2rgb(L,a,b){
 }
 
 function medCut(pixels,k){
-  // Convert all pixels to Lab space for perceptual clustering
+  // ── Strategy: HUE-GROUP FIRST, then subdivide ──────────────────────────
+  // Problem with pure pixel-count clustering: dominant colors (green/yellow)
+  // consume all slots, leaving none for small-but-important colors (brown eye, pink flower).
+  // Solution:
+  //   1. Classify every pixel into a hue group (red/orange/yellow/green/cyan/blue/purple/neutral)
+  //   2. Give each group a MINIMUM guaranteed slot (at least 1 if it has any pixels)
+  //   3. Distribute remaining slots proportionally by pixel count (but capped so no group dominates)
+  //   4. Run k-means within each group to get final colors
+
   var labPix=pixels.map(function(p){return rgb2lab(p[0],p[1],p[2]);});
-
-  // For pale/light pixels, chroma (a,b channels) is subtle but perceptually important.
-  // Boost a,b contribution for bright pixels so light-blue sky ≠ light-yellow headlight.
-  function weightedDist(p1,p2){
-    var dL=p1[0]-p2[0];
-    var dA=p1[1]-p2[1];
-    var dB=p1[2]-p2[2];
-    // For bright pixels (L>70), boost chroma weight so pale hues cluster separately
-    var chromaBoost=(p1[0]>70||p2[0]>70)?2.5:1.0;
-    return dL*dL + dA*dA*chromaBoost + dB*dB*chromaBoost;
-  }
-
-  function avg(pts){
-    if(!pts.length)return[50,0,0];
-    var s=[0,0,0];
-    for(var i=0;i<pts.length;i++){s[0]+=pts[i][0];s[1]+=pts[i][1];s[2]+=pts[i][2];}
-    return[s[0]/pts.length,s[1]/pts.length,s[2]/pts.length];
-  }
-  function cut(pts,d){
-    if(d===0||pts.length===0)return[avg(pts)];
-    var mn=[999,999,999],mx=[-999,-999,-999];
-    for(var i=0;i<pts.length;i++){
-      for(var j=0;j<3;j++){
-        if(pts[i][j]<mn[j])mn[j]=pts[i][j];
-        if(pts[i][j]>mx[j])mx[j]=pts[i][j];
-      }
-    }
-    var avgL=0;for(var i=0;i<pts.length;i++)avgL+=pts[i][0];avgL/=pts.length;
-    var rng=[mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2]];
-    // For bright regions (avg L > 70): boost a,b range so pale hues split correctly
-    var chromaBoost=(avgL>70)?2.2:1.0;
-    rng[1]*=chromaBoost; rng[2]*=chromaBoost;
-    // Weight L slightly less than chroma overall
-    rng[0]*=0.8;
-    var ch=rng[0]>=rng[1]&&rng[0]>=rng[2]?0:rng[1]>=rng[2]?1:2;
-    var sorted=pts.slice().sort(function(a,b){return a[ch]-b[ch];});
-    var mid=Math.floor(sorted.length/2);
-    return cut(sorted.slice(0,mid),d-1).concat(cut(sorted.slice(mid),d-1));
-  }
 
   var samp=labPix.length>8000?labPix.filter(function(_,i){
     return i%Math.floor(labPix.length/8000)===0;
   }):labPix;
 
-  var dep=Math.ceil(Math.log2(Math.max(k,2)));
-  var ctrs=cut(samp.slice(),dep);
-
-  // Merge down to k centers (use weighted distance so pale hues merge last)
-  while(ctrs.length>k){
-    var md=1e9,mi=0,mj=1;
-    for(var i=0;i<ctrs.length;i++){
-      for(var j=i+1;j<ctrs.length;j++){
-        var dd=weightedDist(ctrs[i],ctrs[j]);
-        if(dd<md){md=dd;mi=i;mj=j;}
-      }
-    }
-    var mg=[(ctrs[mi][0]+ctrs[mj][0])/2,
-            (ctrs[mi][1]+ctrs[mj][1])/2,
-            (ctrs[mi][2]+ctrs[mj][2])/2];
-    var nc2=[];
-    for(var i=0;i<ctrs.length;i++)if(i!==mi&&i!==mj)nc2.push(ctrs[i]);
-    nc2.push(mg);
-    ctrs=nc2;
+  // ── Step 1: Classify pixels into hue groups ─────────────────────────────
+  // Groups: 0=neutral/grey/white, 1=red, 2=orange, 3=yellow, 4=green,
+  //         5=cyan, 6=blue, 7=purple/pink
+  function getHueGroup(lab){
+    var L=lab[0],a=lab[1],b=lab[2];
+    var chroma=Math.sqrt(a*a+b*b);
+    // Neutral: low chroma or very dark/light
+    if(chroma<8||(L>88&&chroma<18)||(L<18))return 0;
+    // Hue angle in degrees
+    var hue=(Math.atan2(b,a)*180/Math.PI+360)%360;
+    if(hue<22||hue>=338)return 1;  // red
+    if(hue<50)return 2;            // orange
+    if(hue<80)return 3;            // yellow
+    if(hue<165)return 4;           // green
+    if(hue<205)return 5;           // cyan
+    if(hue<265)return 6;           // blue
+    return 7;                      // purple/pink/magenta
   }
 
-  // K-means refinement using weighted distance
-  for(var it=0;it<30;it++){
-    var sm=Array.from({length:ctrs.length},function(){return[0,0,0,0];});
-    for(var i=0;i<samp.length;i++){
-      var best=0,bd=1e9;
-      for(var j=0;j<ctrs.length;j++){
-        var dd=weightedDist(samp[i],ctrs[j]);
-        if(dd<bd){bd=dd;best=j;}
+  // Count pixels per group
+  var groups=Array.from({length:8},function(){return[];});
+  for(var i=0;i<samp.length;i++){
+    groups[getHueGroup(samp[i])].push(samp[i]);
+  }
+  var groupCounts=groups.map(function(g){return g.length;});
+  var totalPx=samp.length||1;
+
+  // ── Step 2: Allocate slots ───────────────────────────────────────────────
+  // Each non-empty group gets at least 1 slot guaranteed
+  // Then remaining slots distributed proportionally, but each group capped at
+  // max(2, proportional) to prevent any single group from dominating
+  var presentGroups=groupCounts.map(function(c,i){return c>0?i:-1;}).filter(function(i){return i>=0;});
+  var nPresent=presentGroups.length;
+  if(nPresent===0)nPresent=1;
+
+  var slots=new Array(8).fill(0);
+  // Give 1 guaranteed slot to each present group
+  var reserved=0;
+  for(var i=0;i<presentGroups.length;i++){slots[presentGroups[i]]=1;reserved++;}
+  var remaining=k-reserved;
+  if(remaining<0)remaining=0;
+
+  // Distribute remaining proportionally but cap each group at floor(k * 0.4)
+  // so no single group can take more than 40% of total slots
+  var cap=Math.max(2,Math.floor(k*0.4));
+  var propTotal=0;
+  for(var i=0;i<8;i++)if(slots[i]>0)propTotal+=groupCounts[i];
+  if(propTotal===0)propTotal=1;
+
+  var extraGiven=0;
+  // Give proportional extra slots (integer part first)
+  var extras=new Array(8).fill(0);
+  var fracParts=[];
+  for(var i=0;i<8;i++){
+    if(slots[i]===0)continue;
+    var prop=remaining*(groupCounts[i]/propTotal);
+    var extra=Math.min(cap-1,Math.floor(prop)); // -1 because 1 already given
+    extras[i]=extra;
+    extraGiven+=extra;
+    fracParts.push({i:i,frac:prop-extra});
+  }
+  // Give leftover slots to groups with largest fractional parts
+  fracParts.sort(function(a,b){return b.frac-a.frac;});
+  var leftover=remaining-extraGiven;
+  for(var fi=0;fi<fracParts.length&&leftover>0;fi++){
+    var gi=fracParts[fi].i;
+    if(slots[gi]+extras[gi]<cap){extras[gi]++;leftover--;}
+  }
+  for(var i=0;i<8;i++)slots[i]+=extras[i];
+
+  // ── Step 3: K-means within each group ───────────────────────────────────
+  function kmeansGroup(pts,n){
+    if(pts.length===0||n===0)return[];
+    if(pts.length<=n)return pts.slice();
+    // Init: spread initial centers by max-distance selection
+    var ctrs=[pts[Math.floor(pts.length/2)]];
+    for(var ci=1;ci<n;ci++){
+      var maxD=-1,best=0;
+      for(var pi=0;pi<pts.length;pi++){
+        var minD=1e9;
+        for(var cj=0;cj<ctrs.length;cj++){
+          var d=(pts[pi][0]-ctrs[cj][0])*(pts[pi][0]-ctrs[cj][0])+
+                (pts[pi][1]-ctrs[cj][1])*(pts[pi][1]-ctrs[cj][1])+
+                (pts[pi][2]-ctrs[cj][2])*(pts[pi][2]-ctrs[cj][2]);
+          if(d<minD)minD=d;
+        }
+        if(minD>maxD){maxD=minD;best=pi;}
       }
-      sm[best][0]+=samp[i][0];sm[best][1]+=samp[i][1];
-      sm[best][2]+=samp[i][2];sm[best][3]++;
+      ctrs.push(pts[best]);
     }
-    var newCtrs=sm.map(function(s2,i){
-      return s2[3]?[s2[0]/s2[3],s2[1]/s2[3],s2[2]/s2[3]]:ctrs[i];
-    });
-    // Check convergence
-    var moved=false;
-    for(var i=0;i<ctrs.length;i++){
-      if(Math.abs(newCtrs[i][0]-ctrs[i][0])>0.1||
-         Math.abs(newCtrs[i][1]-ctrs[i][1])>0.1||
-         Math.abs(newCtrs[i][2]-ctrs[i][2])>0.1){moved=true;break;}
+    // Iterate k-means
+    for(var it=0;it<20;it++){
+      var sm=Array.from({length:n},function(){return[0,0,0,0];});
+      for(var pi=0;pi<pts.length;pi++){
+        var best=0,bd=1e9;
+        for(var ci=0;ci<ctrs.length;ci++){
+          var d=(pts[pi][0]-ctrs[ci][0])*(pts[pi][0]-ctrs[ci][0])+
+                (pts[pi][1]-ctrs[ci][1])*(pts[pi][1]-ctrs[ci][1])+
+                (pts[pi][2]-ctrs[ci][2])*(pts[pi][2]-ctrs[ci][2]);
+          if(d<bd){bd=d;best=ci;}
+        }
+        sm[best][0]+=pts[pi][0];sm[best][1]+=pts[pi][1];
+        sm[best][2]+=pts[pi][2];sm[best][3]++;
+      }
+      var moved=false;
+      for(var ci=0;ci<n;ci++){
+        if(sm[ci][3]){
+          var nc2=[sm[ci][0]/sm[ci][3],sm[ci][1]/sm[ci][3],sm[ci][2]/sm[ci][3]];
+          if(Math.abs(nc2[0]-ctrs[ci][0])>0.2||Math.abs(nc2[1]-ctrs[ci][1])>0.2||
+             Math.abs(nc2[2]-ctrs[ci][2])>0.2)moved=true;
+          ctrs[ci]=nc2;
+        }
+      }
+      if(!moved)break;
     }
-    ctrs=newCtrs;
-    if(!moved)break;
+    return ctrs;
   }
 
-  // Convert Lab centers back to RGB
-  return ctrs.map(function(c){return lab2rgb(c[0],c[1],c[2]);});
+  // ── Step 4: Collect all centers and convert to RGB ──────────────────────
+  var allCtrs=[];
+  for(var i=0;i<8;i++){
+    if(slots[i]===0)continue;
+    var groupCtrs=kmeansGroup(groups[i],slots[i]);
+    for(var j=0;j<groupCtrs.length;j++)allCtrs.push(groupCtrs[j]);
+  }
+
+  // If we got fewer than k (some groups had 0 pixels), that's fine
+  return allCtrs.map(function(c){return lab2rgb(c[0],c[1],c[2]);});
 }
 
 // nRgb now uses Lab distance for perceptually correct matching
