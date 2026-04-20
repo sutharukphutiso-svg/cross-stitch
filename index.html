@@ -1005,7 +1005,7 @@ function cvtRef(){
     if(hasOutline&&outlineMask[i][j])return 0;
     // Use blurred pixel for mapping - matches palette centers better
     // palette was built from blurPg so blurPg maps more accurately
-    return nHex(blurPg[i][j],palette);
+    return nHex(px,palette);
   });});
 
   // โ”€โ”€ STEP 2: Smooth transitions (anti-blockiness) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
@@ -1055,9 +1055,9 @@ function cvtRef(){
       if(ci<0)continue; // skip bg
 
       // Use blurPg (consistent with how rawGrid was built)
-      var origR=blurPg[i][j][0]+errBuf[i][j][0];
-      var origG=blurPg[i][j][1]+errBuf[i][j][1];
-      var origB=blurPg[i][j][2]+errBuf[i][j][2];
+      var origR=pg[i][j][0]+errBuf[i][j][0];
+      var origG=pg[i][j][1]+errBuf[i][j][1];
+      var origB=pg[i][j][2]+errBuf[i][j][2];
       origR=Math.max(0,Math.min(255,origR));
       origG=Math.max(0,Math.min(255,origG));
       origB=Math.max(0,Math.min(255,origB));
