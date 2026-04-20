@@ -1238,18 +1238,28 @@ function medCut(pixels,k){
     var L=lab[0],a=lab[1],b=lab[2];
     var chroma=Math.sqrt(a*a+b*b);
     // Neutral: low chroma or very dark/light
-    if(chroma<8||(L>90&&chroma<15)||(L<15))return 0;
+    // Lower chroma threshold from 8→5 so pale lavender/light purple doesn't get eaten
+    if(chroma<5||(L>92&&chroma<12)||(L<12))return 0;
     // Hue angle in degrees (Lab a,b axes)
     var hue=(Math.atan2(b,a)*180/Math.PI+360)%360;
-    if(hue<18||hue>=345)return 1;   // red
-    if(hue<50)return 2;             // orange
-    if(hue<75)return 3;             // yellow
-    if(hue<110)return 4;            // yellow-green
-    if(hue<165)return 5;            // green
-    if(hue<205)return 6;            // cyan/teal
-    if(hue<260)return 7;            // blue
-    if(hue<300)return 8;            // purple/violet  ← separated!
-    return 9;                       // pink/magenta/rose ← separated!
+
+    // Lab hue angles (approximate):
+    // Red:         0°  (positive a, zero b)
+    // Yellow:      90° (positive b)
+    // Green:       180° (negative a)
+    // Blue:        270° (negative b)
+    // Purple/Violet: ~300-330° (negative b, slightly positive a)
+    // Pink/Magenta:  ~330-360° (positive a, negative b)
+
+    if(hue<20||hue>=350)return 1;   // red
+    if(hue<52)return 2;             // orange
+    if(hue<78)return 3;             // yellow
+    if(hue<115)return 4;            // yellow-green
+    if(hue<168)return 5;            // green
+    if(hue<208)return 6;            // cyan/teal
+    if(hue<258)return 7;            // blue
+    if(hue<325)return 8;            // purple/violet/lavender (wider range!)
+    return 9;                       // pink/magenta/rose (narrower, 325-350°)
   }
 
   // Count pixels per group
@@ -1268,11 +1278,16 @@ function medCut(pixels,k){
   var slots=new Array(10).fill(0);
 
   // Assign minimums first: min 3 per group (light/mid/dark), min 2 for tiny groups
+  // Purple (group 8) gets min 4 because it always needs light/mid/dark/deep gradation
+  // and tends to have fewer pixels than dominant colors
   var reserved=0;
   for(var i=0;i<presentGroups.length;i++){
     var gi=presentGroups[i];
     var pct=groupCounts[gi]/totalPx;
-    var minS=(pct<0.005)?2:3;
+    var minS;
+    if(gi===8){minS=4;}            // purple: always 4 slots minimum
+    else if(pct<0.005){minS=2;}    // tiny group: 2
+    else{minS=3;}                  // normal: 3
     slots[gi]=minS;
     reserved+=minS;
   }
