@@ -1256,35 +1256,58 @@ function medCut(pixels,k){
   var totalPx=samp.length||1;
 
   // ── Step 2: Allocate slots ───────────────────────────────────────────────
-  // Each non-empty group gets at least 1 slot guaranteed
-  // Then remaining slots distributed proportionally, but each group capped at
-  // max(2, proportional) to prevent any single group from dominating
+  // Philosophy: every color that appears in the image deserves enough slots
+  // to show light/mid/dark gradation (minimum 3 slots).
+  // Only after guaranteeing minimums do we distribute extras proportionally.
+  //
+  // MIN_SLOTS: minimum slots per present group
+  //   - groups with very few pixels (< 0.5% of total) get min 2 (light+dark)
+  //   - all other present groups get min 3 (light/mid/dark)
+  // MAX_CAP: no group can exceed 30% of k (prevents green/yellow monopoly)
+
   var presentGroups=groupCounts.map(function(c,i){return c>0?i:-1;}).filter(function(i){return i>=0;});
   var nPresent=presentGroups.length;
   if(nPresent===0)nPresent=1;
 
   var slots=new Array(8).fill(0);
-  // Give 1 guaranteed slot to each present group
+
+  // Assign minimums first
   var reserved=0;
-  for(var i=0;i<presentGroups.length;i++){slots[presentGroups[i]]=1;reserved++;}
+  for(var i=0;i<presentGroups.length;i++){
+    var gi=presentGroups[i];
+    var pct=groupCounts[gi]/totalPx;
+    var minS=(pct<0.005)?2:3; // tiny group gets 2, normal gets 3
+    slots[gi]=minS;
+    reserved+=minS;
+  }
+
+  // If minimums already exceed k, scale down proportionally
+  if(reserved>k){
+    // Scale each slot down but keep at least 1
+    var scale=k/reserved;
+    reserved=0;
+    for(var i=0;i<8;i++){
+      if(slots[i]>0){slots[i]=Math.max(1,Math.round(slots[i]*scale));reserved+=slots[i];}
+    }
+  }
+
   var remaining=k-reserved;
   if(remaining<0)remaining=0;
 
-  // Distribute remaining proportionally but cap each group at floor(k * 0.4)
-  // so no single group can take more than 40% of total slots
-  var cap=Math.max(2,Math.floor(k*0.4));
+  // Distribute remaining proportionally, cap at 30% of k per group
+  var cap=Math.max(3,Math.floor(k*0.30));
   var propTotal=0;
   for(var i=0;i<8;i++)if(slots[i]>0)propTotal+=groupCounts[i];
   if(propTotal===0)propTotal=1;
 
   var extraGiven=0;
-  // Give proportional extra slots (integer part first)
   var extras=new Array(8).fill(0);
   var fracParts=[];
   for(var i=0;i<8;i++){
     if(slots[i]===0)continue;
     var prop=remaining*(groupCounts[i]/propTotal);
-    var extra=Math.min(cap-1,Math.floor(prop)); // -1 because 1 already given
+    var extra=Math.min(cap-slots[i],Math.floor(prop));
+    if(extra<0)extra=0;
     extras[i]=extra;
     extraGiven+=extra;
     fracParts.push({i:i,frac:prop-extra});
@@ -1293,8 +1316,8 @@ function medCut(pixels,k){
   fracParts.sort(function(a,b){return b.frac-a.frac;});
   var leftover=remaining-extraGiven;
   for(var fi=0;fi<fracParts.length&&leftover>0;fi++){
-    var gi=fracParts[fi].i;
-    if(slots[gi]+extras[gi]<cap){extras[gi]++;leftover--;}
+    var gi2=fracParts[fi].i;
+    if(slots[gi2]+extras[gi2]<cap){extras[gi2]++;leftover--;}
   }
   for(var i=0;i<8;i++)slots[i]+=extras[i];
 
