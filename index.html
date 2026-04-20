@@ -999,7 +999,7 @@ function cvtRef(){
   // This eliminates noise without dithering
   var smoothGrid=rawGrid.map(function(row){return row.slice();});
 
-  for(var pass=0;pass<2;pass++){
+  for(var pass=0;pass<1;pass++){ // 1 pass - preserve gradients
     for(var i=1;i<ROWS-1;i++){
       for(var j=1;j<COLS-1;j++){
         var ci=smoothGrid[i][j];
@@ -1012,11 +1012,10 @@ function cvtRef(){
 
         // Isolated pixel (0 same neighbors) = noise โ’ replace with majority neighbor
         if(sameCount===0){
-          var freq={};
-          nbrs.forEach(function(n){if(n>=0){freq[n]=(freq[n]||0)+1;}});
-          var best=ci,bestN=0;
-          Object.keys(freq).forEach(function(k){if(freq[k]>bestN){bestN=freq[k];best=parseInt(k);}});
-          smoothGrid[i][j]=best;
+          // Only remove if ALL valid neighbors are same color (true noise, not gradient)
+          var validNbrs=nbrs.filter(function(n){return n>=0;});
+          var allSame=validNbrs.length>=3&&validNbrs.every(function(n){return n===validNbrs[0];});
+          if(allSame)smoothGrid[i][j]=validNbrs[0];
         }
       }
     }
@@ -1025,7 +1024,7 @@ function cvtRef(){
   // โ”€โ”€ STEP 2.5: Soft Floyd-Steinberg Dithering (25% weight) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
   // Diffuse quantization error to smooth color banding
   // Low weight (0.25) prevents confetti stitches while smoothing transitions
-  var DITHER_W=0.25;
+  var DITHER_W=0.15; // reduced to prevent color bleeding across families
   var errBuf=Array.from({length:ROWS},function(){return Array.from({length:COLS},function(){return [0,0,0];});});
   var ditherGrid=smoothGrid.map(function(row){return row.slice();});
 
@@ -1115,15 +1114,15 @@ function cvtRef(){
   var palFamily=palette.map(function(hex,i){
     if(i===0&&hasOutline)return 'outline';
     var sat=getSat(hex);
-    if(sat<0.15)return 'neutral'; // gray/white/beige
+    if(sat<0.08)return 'neutral'; // gray/white only (lower threshold - pale pink is NOT neutral)
     var hue=getHue(hex);
     if(hue<0)return 'neutral';
-    if(hue>=300||hue<20)return 'red-pink';   // red, pink, magenta
+    if(hue>=330||hue<20)return 'red-pink';   // red, hot pink, magenta
     if(hue>=20&&hue<50)return 'orange-brown';
     if(hue>=50&&hue<80)return 'yellow';
     if(hue>=80&&hue<165)return 'green';
     if(hue>=165&&hue<255)return 'blue-teal';
-    if(hue>=255&&hue<300)return 'purple-violet';
+    if(hue>=255&&hue<330)return 'purple-violet'; // wider: covers lavender, mauve, pink-purple
     return 'neutral';
   });
 
