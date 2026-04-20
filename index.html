@@ -1360,14 +1360,16 @@ function medCut(pixels,k){
   function kmeansGroup(pts,n){
     if(pts.length===0||n===0)return[];
     if(pts.length<=n)return pts.slice();
-    // Init: evenly spaced along L axis to guarantee coverage of full gradient
-    // Sort by L (lightness) then pick evenly spaced points
+    // Init: evenly spaced along L axis to guarantee full gradient coverage
+    // Sort by L (lightness), pick evenly spaced → ensures light AND dark ends are represented
     var sorted=pts.slice().sort(function(a,b){return a[0]-b[0];});
     var ctrs=[];
     for(var ci=0;ci<n;ci++){
-      var idx=Math.round(ci*(sorted.length-1)/(n-1||1));
-      ctrs.push(sorted[idx]);
+      var idx=Math.round(ci*(sorted.length-1)/(Math.max(1,n-1)));
+      ctrs.push(sorted[Math.min(idx,sorted.length-1)].slice());
     }
+    // Also ensure darkest and lightest are always included
+    if(n>=2){ctrs[0]=sorted[0].slice();ctrs[n-1]=sorted[sorted.length-1].slice();}
     // Iterate k-means
     for(var it=0;it<20;it++){
       var sm=Array.from({length:n},function(){return[0,0,0,0];});
@@ -1397,10 +1399,26 @@ function medCut(pixels,k){
   }
 
   // ── Step 4: Collect all centers and convert to RGB ──────────────────────
+  // Oversample extreme-L pixels before clustering so light/dark ends are represented
   var allCtrs=[];
   for(var i=0;i<10;i++){
     if(slots[i]===0)continue;
-    var groupCtrs=kmeansGroup(groups[i],slots[i]);
+    var gpts=groups[i];
+    if(gpts.length>0&&slots[i]>=4){
+      // Find lightest 5% and darkest 5% of this group
+      var gsorted=gpts.slice().sort(function(a,b){return a[0]-b[0];});
+      var tail=Math.max(1,Math.floor(gsorted.length*0.05));
+      var augmented=gpts.slice();
+      // Add extra copies of extreme pixels to boost their weight in clustering
+      for(var ei=0;ei<tail;ei++){
+        for(var rep=0;rep<3;rep++){
+          augmented.push(gsorted[ei].slice());                    // dark end
+          augmented.push(gsorted[gsorted.length-1-ei].slice());  // light end
+        }
+      }
+      gpts=augmented;
+    }
+    var groupCtrs=kmeansGroup(gpts,slots[i]);
     for(var j=0;j<groupCtrs.length;j++)allCtrs.push(groupCtrs[j]);
   }
 
