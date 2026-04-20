@@ -1040,7 +1040,7 @@ function cvtRef(){
   // Low weight (0.25) prevents confetti stitches while smoothing transitions
   // Dithering weight: low value = subtle gradient smoothing only
   // Uses blurPg (consistent with palette) not original pg
-  var DITHER_W=0.10;
+  var DITHER_W=0; // disabled: with 30-100 colors, dithering hurts gradient detail
   var errBuf=Array.from({length:ROWS},function(){return Array.from({length:COLS},function(){return [0,0,0];});});
   var ditherGrid=smoothGrid.map(function(row){return row.slice();});
 
