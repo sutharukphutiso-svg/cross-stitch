@@ -1360,21 +1360,13 @@ function medCut(pixels,k){
   function kmeansGroup(pts,n){
     if(pts.length===0||n===0)return[];
     if(pts.length<=n)return pts.slice();
-    // Init: spread initial centers by max-distance selection
-    var ctrs=[pts[Math.floor(pts.length/2)]];
-    for(var ci=1;ci<n;ci++){
-      var maxD=-1,best=0;
-      for(var pi=0;pi<pts.length;pi++){
-        var minD=1e9;
-        for(var cj=0;cj<ctrs.length;cj++){
-          var d=(pts[pi][0]-ctrs[cj][0])*(pts[pi][0]-ctrs[cj][0])+
-                (pts[pi][1]-ctrs[cj][1])*(pts[pi][1]-ctrs[cj][1])+
-                (pts[pi][2]-ctrs[cj][2])*(pts[pi][2]-ctrs[cj][2]);
-          if(d<minD)minD=d;
-        }
-        if(minD>maxD){maxD=minD;best=pi;}
-      }
-      ctrs.push(pts[best]);
+    // Init: evenly spaced along L axis to guarantee coverage of full gradient
+    // Sort by L (lightness) then pick evenly spaced points
+    var sorted=pts.slice().sort(function(a,b){return a[0]-b[0];});
+    var ctrs=[];
+    for(var ci=0;ci<n;ci++){
+      var idx=Math.round(ci*(sorted.length-1)/(n-1||1));
+      ctrs.push(sorted[idx]);
     }
     // Iterate k-means
     for(var it=0;it<20;it++){
