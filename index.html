@@ -1238,27 +1238,25 @@ function medCut(pixels,k){
     var chroma=Math.sqrt(a*a+b*b);
     // Neutral: low chroma or very dark/light
     // Lower chroma threshold from 8→5 so pale lavender/light purple doesn't get eaten
-    if(chroma<5||(L>92&&chroma<12)||(L<12))return 0;
+    if(chroma<5||(L>92&&chroma<10)||(L<12))return 0;
     // Hue angle in degrees (Lab a,b axes)
     var hue=(Math.atan2(b,a)*180/Math.PI+360)%360;
 
-    // Lab hue angles (approximate):
-    // Red:         0°  (positive a, zero b)
-    // Yellow:      90° (positive b)
-    // Green:       180° (negative a)
-    // Blue:        270° (negative b)
-    // Purple/Violet: ~300-330° (negative b, slightly positive a)
-    // Pink/Magenta:  ~330-360° (positive a, negative b)
+    // KEY INSIGHT: Pink/rose cannot be detected by hue alone!
+    // Pink hue in Lab ≈ 0-10° which overlaps with red.
+    // Separation: PINK has low b (little yellow), RED/ORANGE has high b.
+    // Rule: a>8 AND b<25 = pink/rose (any lightness from pale to deep)
+    if(a>8&&b<25)return 9;          // pink/rose/magenta (ALL lightness levels)
 
-    if(hue<20||hue>=350)return 1;   // red
-    if(hue<52)return 2;             // orange
-    if(hue<78)return 3;             // yellow
-    if(hue<115)return 4;            // yellow-green
+    if(hue<52)return 1;             // red/orange-red (high b separates from pink)
+    if(hue<78)return 2;             // orange
+    if(hue<115)return 3;            // yellow
+    if(hue<140)return 4;            // yellow-green
     if(hue<168)return 5;            // green
     if(hue<208)return 6;            // cyan/teal
     if(hue<258)return 7;            // blue
-    if(hue<325)return 8;            // purple/violet/lavender (wider range!)
-    return 9;                       // pink/magenta/rose (narrower, 325-350°)
+    if(hue<330)return 8;            // purple/violet/lavender
+    return 9;                       // remaining pink/magenta
   }
 
   // Count pixels per group
