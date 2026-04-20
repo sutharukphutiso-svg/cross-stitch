@@ -1276,17 +1276,17 @@ function medCut(pixels,k){
 
   var slots=new Array(10).fill(0);
 
-  // Assign minimums first: min 3 per group (light/mid/dark), min 2 for tiny groups
-  // Purple (group 8) gets min 4 because it always needs light/mid/dark/deep gradation
-  // and tends to have fewer pixels than dominant colors
+  // ── Slot minimums ───────────────────────────────────────────────────────
+  // purple (8) gets min 6: needs light/mid/dark/deep + 2 more for gradient
+  // other groups get min 3 (light/mid/dark), tiny groups get min 2
   var reserved=0;
   for(var i=0;i<presentGroups.length;i++){
     var gi=presentGroups[i];
     var pct=groupCounts[gi]/totalPx;
     var minS;
-    if(gi===8){minS=4;}            // purple: always 4 slots minimum
-    else if(pct<0.005){minS=2;}    // tiny group: 2
-    else{minS=3;}                  // normal: 3
+    if(gi===8){minS=6;}            // purple/violet: guaranteed 6 slots
+    else if(pct<0.005){minS=2;}    // tiny group
+    else{minS=3;}                  // normal
     slots[gi]=minS;
     reserved+=minS;
   }
@@ -1303,24 +1303,27 @@ function medCut(pixels,k){
   var remaining=k-reserved;
   if(remaining<0)remaining=0;
 
-  // Distribute remaining proportionally, cap at 25% of k per group
-  var cap=Math.max(3,Math.floor(k*0.25));
-  var propTotal=0;
-  for(var i=0;i<10;i++)if(slots[i]>0)propTotal+=groupCounts[i];
-  if(propTotal===0)propTotal=1;
+  // ── Distribute remaining using sqrt(count) weighting ────────────────────
+  // sqrt gives small-but-important groups more weight vs raw pixel count
+  // cap at 20% of k so no single group monopolizes
+  var cap=Math.max(4,Math.floor(k*0.20));
+  var sqrtTotal=0;
+  for(var i=0;i<10;i++)if(slots[i]>0)sqrtTotal+=Math.sqrt(groupCounts[i]);
+  if(sqrtTotal===0)sqrtTotal=1;
 
   var extraGiven=0;
   var extras=new Array(10).fill(0);
   var fracParts=[];
   for(var i=0;i<10;i++){
     if(slots[i]===0)continue;
-    var prop=remaining*(groupCounts[i]/propTotal);
+    var prop=remaining*(Math.sqrt(groupCounts[i])/sqrtTotal);
     var extra=Math.min(cap-slots[i],Math.floor(prop));
     if(extra<0)extra=0;
     extras[i]=extra;
     extraGiven+=extra;
     fracParts.push({i:i,frac:prop-extra});
   }
+  // Give leftover to groups with largest fractional remainder
   fracParts.sort(function(a,b){return b.frac-a.frac;});
   var leftover=remaining-extraGiven;
   for(var fi=0;fi<fracParts.length&&leftover>0;fi++){
