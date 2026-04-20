@@ -847,8 +847,8 @@ function cvtRef(){
 
   // โ”€โ”€ OUTLINE DETECTION โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
   // Strict: only near-black pixels (lum<40) next to much brighter pixels
-  var OUTLINE_THRESH=40;  // very dark only
-  var CONTRAST_MIN=80;    // must be much brighter than outline
+  var OUTLINE_THRESH=25;  // only truly near-black (reduced from 40 to avoid dark flower shadows)
+  var CONTRAST_MIN=100;   // must be much brighter than outline (increased)
   var outlineMask=Array.from({length:ROWS},function(){return new Array(COLS).fill(false);});
   var outlineColor=[-1,-1,-1];
 
@@ -871,8 +871,10 @@ function cvtRef(){
           var nlum=0.299*npx[0]+0.587*npx[1]+0.114*npx[2];
           if(nlum-lum>CONTRAST_MIN)brightCount++;
         }
-        // Need at least 2 bright neighbors to be sure it's outline (not noise)
-        if(brightCount>=2){outlineMask[i][j]=true;outlinePx.push(px);}
+        // Need at least 4 bright neighbors to be sure it's outline (not shadow/shading)
+        // Also skip if pixel has warm hue (reddish/pinkish dark = shadow, not outline)
+        var isWarmDark=(px[0]>px[2]&&px[0]-px[2]>15); // R > B = warm = not black outline
+        if(brightCount>=4&&!isWarmDark){outlineMask[i][j]=true;outlinePx.push(px);}
       }
     }
   }
@@ -1114,9 +1116,14 @@ function cvtRef(){
   var palFamily=palette.map(function(hex,i){
     if(i===0&&hasOutline)return 'outline';
     var sat=getSat(hex);
-    if(sat<0.08)return 'neutral'; // gray/white only (lower threshold - pale pink is NOT neutral)
+    // Use RGB saturation only for truly achromatic colors
+    // Pale pink can have sat<0.15 in RGB but is NOT neutral
+    if(sat<0.05)return 'neutral'; // only truly grey/white
     var hue=getHue(hex);
     if(hue<0)return 'neutral';
+    // Pink detection using RGB: R dominant, G&B similar and lower
+    var rgb2=h2r(hex);
+    if(rgb2&&rgb2[0]>rgb2[2]+15&&rgb2[1]<(rgb2[0]+rgb2[2])/2+20)return 'red-pink'; // pink/rose
     if(hue>=330||hue<20)return 'red-pink';   // red, hot pink, magenta
     if(hue>=20&&hue<50)return 'orange-brown';
     if(hue>=50&&hue<80)return 'yellow';
