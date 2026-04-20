@@ -1259,15 +1259,18 @@ function medCut(pixels,k){
     var chroma=Math.sqrt(a*a+b*b);
     // Neutral: low chroma or very dark/light
     // Lower chroma threshold from 8→5 so pale lavender/light purple doesn't get eaten
-    if(chroma<5||(L>92&&chroma<10)||(L<12))return 0;
+    // Neutral: truly achromatic only
+    // Key: pale pink has chroma ~4-14, must NOT be neutral
+    // Special case: bright pixel (L>85) with any positive a = pale pink/warm white → group 9
+    if(L>85&&a>1.5&&b<10)return 9;  // very pale pink/warm white → pink group
+    if(chroma<4||(L>93&&chroma<8)||(L<12))return 0;
     // Hue angle in degrees (Lab a,b axes)
     var hue=(Math.atan2(b,a)*180/Math.PI+360)%360;
 
     // KEY INSIGHT: Pink/rose cannot be detected by hue alone!
-    // Pink hue in Lab ≈ 0-10° which overlaps with red.
     // Separation: PINK has low b (little yellow), RED/ORANGE has high b.
     // Rule: a>8 AND b<25 = pink/rose (any lightness from pale to deep)
-    if(a>8&&b<25)return 9;          // pink/rose/magenta (ALL lightness levels)
+    if(a>6&&b<25)return 9;          // pink/rose/magenta (lower threshold to catch more pink)
 
     if(hue<52)return 1;             // red/orange-red (high b separates from pink)
     if(hue<78)return 2;             // orange
