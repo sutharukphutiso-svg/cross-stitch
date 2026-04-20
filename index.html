@@ -1276,17 +1276,19 @@ function medCut(pixels,k){
 
   var slots=new Array(10).fill(0);
 
-  // ── Slot minimums ───────────────────────────────────────────────────────
-  // purple (8) gets min 6: needs light/mid/dark/deep + 2 more for gradient
-  // other groups get min 3 (light/mid/dark), tiny groups get min 2
+  // ── Slot minimums: dynamic based on actual pixel percentage ────────────
+  // Avoids wasting slots on rare colors (e.g. purple=2% in a pink-dominant image)
+  // while still guaranteeing enough gradient for dominant colors
   var reserved=0;
   for(var i=0;i<presentGroups.length;i++){
     var gi=presentGroups[i];
     var pct=groupCounts[gi]/totalPx;
     var minS;
-    if(gi===8){minS=6;}            // purple/violet: guaranteed 6 slots
-    else if(pct<0.005){minS=2;}    // tiny group
-    else{minS=3;}                  // normal
+    if(gi===0){                         // neutral: scale with presence
+      minS=Math.max(2,Math.min(4,Math.floor(pct*20)));
+    } else if(pct>=0.15){minS=4;}       // dominant color: 4 min
+    else if(pct>=0.01){minS=3;}         // present color: always 3 (light/mid/dark)
+    else{minS=2;}                       // trace color: 2
     slots[gi]=minS;
     reserved+=minS;
   }
