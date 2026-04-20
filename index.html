@@ -903,7 +903,10 @@ function cvtRef(){
   // If outline takes 1 slot: disable outline if nc<=2
   if(hasOutline&&nc<=2){hasOutline=false;}
 
-  // Collect fg pixels from BLURRED image (skip edge-bleed zone)
+  // Collect fg pixels: mix of blurred (for stable clusters) + original (for extreme colors)
+  // Using ONLY blurred misses the lightest/darkest ends of gradients
+  // Using ONLY original causes noisy clusters
+  // Mix: 70% blurred + 30% original sampled pixels
   var fg=[];
   for(var i=0;i<ROWS;i++){
     for(var j=0;j<COLS;j++){
@@ -913,13 +916,20 @@ function cvtRef(){
       else if(i<ROWS-1&&bgMask[i+1][j])nearBg=true;
       else if(j>0&&bgMask[i][j-1])nearBg=true;
       else if(j<COLS-1&&bgMask[i][j+1])nearBg=true;
-      if(!nearBg)fg.push(blurPg[i][j]);
+      if(!nearBg){
+        fg.push(blurPg[i][j]);
+        // Also add original pixel every 3rd pixel to capture gradient extremes
+        if((i+j)%3===0)fg.push(pg[i][j]);
+      }
     }
   }
   if(fg.length<palNc*8){
     fg=[];
     for(var i=0;i<ROWS;i++)for(var j=0;j<COLS;j++){
-      if(!bgMask[i][j]&&!outlineMask[i][j])fg.push(blurPg[i][j]);
+      if(!bgMask[i][j]&&!outlineMask[i][j]){
+        fg.push(blurPg[i][j]);
+        if((i+j)%3===0)fg.push(pg[i][j]);
+      }
     }
   }
   if(fg.length<10)fg=blurPg.flat().filter(function(_,k){
@@ -993,7 +1003,9 @@ function cvtRef(){
   var rawGrid=pg.map(function(row,i){return row.map(function(px,j){
     if(bgMask[i][j])return -1;
     if(hasOutline&&outlineMask[i][j])return 0;
-    return nHex(px,palette);
+    // Use blurred pixel for mapping - matches palette centers better
+    // palette was built from blurPg so blurPg maps more accurately
+    return nHex(blurPg[i][j],palette);
   });});
 
   // โ”€โ”€ STEP 2: Smooth transitions (anti-blockiness) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
