@@ -1038,7 +1038,9 @@ function cvtRef(){
   // โ”€โ”€ STEP 2.5: Soft Floyd-Steinberg Dithering (25% weight) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
   // Diffuse quantization error to smooth color banding
   // Low weight (0.25) prevents confetti stitches while smoothing transitions
-  var DITHER_W=0.15; // reduced to prevent color bleeding across families
+  // Dithering weight: low value = subtle gradient smoothing only
+  // Uses blurPg (consistent with palette) not original pg
+  var DITHER_W=0.10;
   var errBuf=Array.from({length:ROWS},function(){return Array.from({length:COLS},function(){return [0,0,0];});});
   var ditherGrid=smoothGrid.map(function(row){return row.slice();});
 
@@ -1052,10 +1054,10 @@ function cvtRef(){
       var ci=ditherGrid[i][j];
       if(ci<0)continue; // skip bg
 
-      // Get ORIGINAL pixel + accumulated error (not blurred - keeps sharp detail)
-      var origR=pg[i][j][0]+errBuf[i][j][0];
-      var origG=pg[i][j][1]+errBuf[i][j][1];
-      var origB=pg[i][j][2]+errBuf[i][j][2];
+      // Use blurPg (consistent with how rawGrid was built)
+      var origR=blurPg[i][j][0]+errBuf[i][j][0];
+      var origG=blurPg[i][j][1]+errBuf[i][j][1];
+      var origB=blurPg[i][j][2]+errBuf[i][j][2];
       origR=Math.max(0,Math.min(255,origR));
       origG=Math.max(0,Math.min(255,origG));
       origB=Math.max(0,Math.min(255,origB));
