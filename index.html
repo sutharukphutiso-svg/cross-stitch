@@ -1290,6 +1290,12 @@ function medCut(pixels,k){
   }
   var groupCounts=groups.map(function(g){return g.length;});
   var totalPx=samp.length||1;
+  // DEBUG: log group distribution
+  var gNames=['neutral','red','orange','yellow','yel-green','green','cyan','blue','purple','pink'];
+  console.log('=== HUE GROUP DISTRIBUTION ===');
+  for(var gi=0;gi<10;gi++){
+    if(groupCounts[gi]>0)console.log('  Group '+gi+' ('+gNames[gi]+'): '+groupCounts[gi]+' px = '+(groupCounts[gi]/totalPx*100).toFixed(1)+'%');
+  }
 
   // ── Step 2: Allocate slots ───────────────────────────────────────────────
   var presentGroups=groupCounts.map(function(c,i){return c>0?i:-1;}).filter(function(i){return i>=0;});
