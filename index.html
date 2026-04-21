@@ -104,6 +104,8 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 <div class="sec"><div class="sec-t">Max Colors</div><div class="sec-b">
 <div class="ctrl"><div class="cl"><span>Colors</span><span class="cv" id="ncv">16</span></div>
 <input type="range" id="nc" min="2" max="100" value="16" step="1" oninput="onNc()"></div>
+<div class="btn-r" style="margin-top:5px"><button class="btn pr" style="width:100%;font-size:11px" onclick="autoDetectColors()">🎨 Auto-detect colors</button></div>
+<div id="color-hint" style="font-size:10px;color:#2d6a4f;margin-top:3px;display:none;line-height:1.5"></div>
 </div></div>
 
 <div class="sec"><div class="sec-t">Background</div><div class="sec-b">
@@ -1262,47 +1264,39 @@ function medCut(pixels,k){
     // Neutral: truly achromatic only
     // Key: pale pink has chroma ~4-14, must NOT be neutral
     // Special case: bright pixel (L>85) with any positive a = pale pink/warm white → group 9
-    if(L>85&&a>1.5&&b<10)return 9;  // very pale pink/warm white → pink group
+    if(L>85&&a>1.5&&b<10)return 9;  // very pale pink → pink
     if(chroma<4||(L>93&&chroma<8)||(L<12))return 0;
-    // Hue angle in degrees (Lab a,b axes)
+    // SKIN TONE: warm reddish-orange a>5, b 10-42, a > b*0.25
+    // Captures all skin from fair to dark + brown hair
+    if(a>5&&b>10&&b<42&&a>b*0.25&&L>50)return 10;
+    // Pink: positive a, low b
+    if(a>6&&b>-5&&b<25)return 9;  // pink: positive b only (purple has b<0, goes to group 8)
     var hue=(Math.atan2(b,a)*180/Math.PI+360)%360;
-
-    // KEY INSIGHT: Pink/rose cannot be detected by hue alone!
-    // Separation: PINK has low b (little yellow), RED/ORANGE has high b.
-    // Rule: a>8 AND b<25 = pink/rose (any lightness from pale to deep)
-    if(a>6&&b<25)return 9;          // pink/rose/magenta (lower threshold to catch more pink)
-
-    if(hue<52)return 1;             // red/orange-red (high b separates from pink)
-    if(hue<78)return 2;             // orange
-    if(hue<115)return 3;            // yellow
-    if(hue<140)return 4;            // yellow-green
-    if(hue<168)return 5;            // green
-    if(hue<208)return 6;            // cyan/teal
-    if(hue<258)return 7;            // blue
-    if(hue<330)return 8;            // purple/violet/lavender
-    return 9;                       // remaining pink/magenta
+    if(hue<52)return 1;   // red
+    if(hue<78)return 2;   // orange
+    if(hue<105)return 3;  // yellow
+    if(hue<120)return 4;  // yel-green (narrow)
+    if(hue<175)return 5;  // green
+    if(hue<208)return 6;  // cyan
+    if(hue<258)return 7;  // blue
+    if(hue<330)return 8;  // purple
+    return 9;             // pink
   }
 
   // Count pixels per group
-  var groups=Array.from({length:10},function(){return[];});
+  var groups=Array.from({length:11},function(){return[];});
   for(var i=0;i<samp.length;i++){
     groups[getHueGroup(samp[i])].push(samp[i]);
   }
   var groupCounts=groups.map(function(g){return g.length;});
   var totalPx=samp.length||1;
-  // DEBUG: log group distribution
-  var gNames=['neutral','red','orange','yellow','yel-green','green','cyan','blue','purple','pink'];
-  console.log('=== HUE GROUP DISTRIBUTION ===');
-  for(var gi=0;gi<10;gi++){
-    if(groupCounts[gi]>0)console.log('  Group '+gi+' ('+gNames[gi]+'): '+groupCounts[gi]+' px = '+(groupCounts[gi]/totalPx*100).toFixed(1)+'%');
-  }
 
   // ── Step 2: Allocate slots ───────────────────────────────────────────────
   var presentGroups=groupCounts.map(function(c,i){return c>0?i:-1;}).filter(function(i){return i>=0;});
   var nPresent=presentGroups.length;
   if(nPresent===0)nPresent=1;
 
-  var slots=new Array(10).fill(0);
+  var slots=new Array(11).fill(0);
 
   // ── Slot minimums: dynamic based on actual pixel percentage ────────────
   // Avoids wasting slots on rare colors (e.g. purple=2% in a pink-dominant image)
@@ -1314,8 +1308,10 @@ function medCut(pixels,k){
     var minS;
     if(gi===0){                         // neutral: scale with presence
       minS=Math.max(2,Math.min(4,Math.floor(pct*20)));
-    } else if(pct>=0.15){minS=4;}       // dominant color: 4 min
-    else if(pct>=0.01){minS=3;}         // present color: always 3 (light/mid/dark)
+    } else if(gi===10&&pct>=0.02){minS=4;} // skin: min 4 only if significant (>2%)
+    else if(gi===9&&pct>=0.15){minS=Math.max(6,Math.floor(k*pct*0.7));} // pink: proportional minimum
+    else if(pct>=0.15){minS=4;}         // dominant color: 4 min
+    else if(pct>=0.01){minS=3;}         // present color: 3
     else{minS=2;}                       // trace color: 2
     slots[gi]=minS;
     reserved+=minS;
@@ -1325,7 +1321,7 @@ function medCut(pixels,k){
   if(reserved>k){
     var scale=k/reserved;
     reserved=0;
-    for(var i=0;i<10;i++){
+    for(var i=0;i<11;i++){
       if(slots[i]>0){slots[i]=Math.max(1,Math.round(slots[i]*scale));reserved+=slots[i];}
     }
   }
@@ -1338,16 +1334,22 @@ function medCut(pixels,k){
   // cap at 20% of k so no single group monopolizes
   var cap=Math.max(4,Math.floor(k*0.20));
   var sqrtTotal=0;
-  for(var i=0;i<10;i++)if(slots[i]>0)sqrtTotal+=Math.sqrt(groupCounts[i]);
+  for(var i=0;i<11;i++)if(slots[i]>0)sqrtTotal+=Math.sqrt(groupCounts[i]);
   if(sqrtTotal===0)sqrtTotal=1;
 
   var extraGiven=0;
-  var extras=new Array(10).fill(0);
+  var extras=new Array(11).fill(0);
   var fracParts=[];
-  for(var i=0;i<10;i++){
+  for(var i=0;i<11;i++){
     if(slots[i]===0)continue;
     var prop=remaining*(Math.sqrt(groupCounts[i])/sqrtTotal);
-    var extra=Math.min(cap-slots[i],Math.floor(prop));
+    var iCap;
+    if(i===5) iCap=Math.max(4,Math.floor(k*0.15));      // green: max 15%
+    else if(i===4) iCap=Math.max(3,Math.floor(k*0.10)); // yel-green: max 10%
+    else if(i===10) iCap=Math.max(2,Math.floor(k*0.06));// skin: max 6%
+    else if(i===3) iCap=Math.max(3,Math.floor(k*0.09));// yellow: max 9%
+    else iCap=cap;
+    var extra=Math.min(iCap-slots[i],Math.floor(prop));
     if(extra<0)extra=0;
     extras[i]=extra;
     extraGiven+=extra;
@@ -1360,22 +1362,92 @@ function medCut(pixels,k){
     var gi2=fracParts[fi].i;
     if(slots[gi2]+extras[gi2]<cap){extras[gi2]++;leftover--;}
   }
-  for(var i=0;i<10;i++)slots[i]+=extras[i];
+  for(var i=0;i<11;i++)slots[i]+=extras[i];
+
+  // ── Proportional rebalancing: all groups get slots proportional to pixel% ──
+  var PROP_MULT=0.85;
+  var HARD_CAPS={5:Math.max(4,Math.floor(k*0.15)),   // green max 15%
+                 4:Math.max(3,Math.floor(k*0.10)),    // yel-green max 10%
+                 3:Math.max(3,Math.floor(k*0.09)),    // yellow max 9%
+                 10:Math.max(2,Math.floor(k*0.07))};  // skin max 7%
+
+  // First: enforce hard caps on over-represented groups
+  for(var gi=0;gi<11;gi++){
+    if(HARD_CAPS[gi]!==undefined&&slots[gi]>HARD_CAPS[gi]){
+      slots[gi]=HARD_CAPS[gi];
+    }
+  }
+
+  // Recalculate remaining after caps
+  var usedAfterCap=0;
+  for(var gi=0;gi<11;gi++)usedAfterCap+=slots[gi];
+  var freed=k-usedAfterCap;
+
+  // Distribute freed slots to under-represented groups, sorted by deficit
+  if(freed>0){
+    var needs=[];
+    for(var gi=0;gi<11;gi++){
+      if(groupCounts[gi]===0)continue;
+      var gpct=groupCounts[gi]/totalPx;
+      var target=Math.min(Math.round(k*gpct*PROP_MULT),
+                 HARD_CAPS[gi]!==undefined?HARD_CAPS[gi]:Math.floor(k*0.25));
+      var need=target-slots[gi];
+      if(need>0)needs.push({g:gi,need:need});
+    }
+    needs.sort(function(a,b){return b.need-a.need;}); // biggest deficit first
+    for(var ni=0;ni<needs.length&&freed>0;ni++){
+      var give=Math.min(needs[ni].need,freed);
+      slots[needs[ni].g]+=give;
+      freed-=give;
+    }
+    // Give any leftover to pink (group 9) if present
+    if(freed>0&&slots[9]>0)slots[9]+=freed;
+  }
+
+  // DEBUG: show group distribution and slot allocation
+  var gNames=['neutral','red','orange','yellow','yel-green','green','cyan','blue','purple','pink','skin'];
+  console.log('=== GROUP DISTRIBUTION & SLOTS ===');
+  for(var gi=0;gi<11;gi++){
+    if(groupCounts[gi]>0||slots[gi]>0){
+      console.log('Group '+gi+' ('+gNames[gi]+'): '+groupCounts[gi]+' px = '+(groupCounts[gi]/totalPx*100).toFixed(1)+'% → '+slots[gi]+' slots');
+    }
+  }
+  console.log('Total slots: '+(function(){var s=0;for(var i=0;i<11;i++)s+=slots[i];return s;})());
 
   // ── Step 3: K-means within each group ───────────────────────────────────
   function kmeansGroup(pts,n){
     if(pts.length===0||n===0)return[];
     if(pts.length<=n)return pts.slice();
-    // Init: evenly spaced along L axis to guarantee full gradient coverage
-    // Sort by L (lightness), pick evenly spaced → ensures light AND dark ends are represented
+
+    // ── Init: equidistant along L axis to guarantee full gradient coverage ──
+    // Sort by L (lightness), pick evenly spaced points as initial centers
+    // This ensures both lightest AND darkest ends always get a center
+    // Problem with old approach: starting from middle → centers cluster in dense area
     var sorted=pts.slice().sort(function(a,b){return a[0]-b[0];});
+
+    // Oversample extreme 5% pixels 3x to give gradient endpoints more weight
+    var augmented=sorted.slice();
+    var tail=Math.max(1,Math.floor(sorted.length*0.05));
+    for(var ei=0;ei<tail;ei++){
+      for(var rep=0;rep<3;rep++){
+        augmented.push(sorted[ei]);                      // dark end
+        augmented.push(sorted[sorted.length-1-ei]);      // light end
+      }
+    }
+    // Re-sort after augmentation
+    augmented.sort(function(a,b){return a[0]-b[0];});
+
+    // Pick n evenly spaced points along L axis as initial centers
     var ctrs=[];
     for(var ci=0;ci<n;ci++){
-      var idx=Math.round(ci*(sorted.length-1)/(Math.max(1,n-1)));
-      ctrs.push(sorted[Math.min(idx,sorted.length-1)].slice());
+      var idx=Math.round(ci*(augmented.length-1)/(Math.max(1,n-1)));
+      ctrs.push(augmented[Math.min(idx,augmented.length-1)].slice());
     }
-    // Also ensure darkest and lightest are always included
-    if(n>=2){ctrs[0]=sorted[0].slice();ctrs[n-1]=sorted[sorted.length-1].slice();}
+    // Always force darkest and lightest as first/last centers
+    if(n>=2){
+      ctrs[0]=sorted[0].slice();
+      ctrs[n-1]=sorted[sorted.length-1].slice();
+    }
     // Iterate k-means
     for(var it=0;it<20;it++){
       var sm=Array.from({length:n},function(){return[0,0,0,0];});
@@ -1405,26 +1477,10 @@ function medCut(pixels,k){
   }
 
   // ── Step 4: Collect all centers and convert to RGB ──────────────────────
-  // Oversample extreme-L pixels before clustering so light/dark ends are represented
   var allCtrs=[];
-  for(var i=0;i<10;i++){
+  for(var i=0;i<11;i++){
     if(slots[i]===0)continue;
-    var gpts=groups[i];
-    if(gpts.length>0&&slots[i]>=4){
-      // Find lightest 5% and darkest 5% of this group
-      var gsorted=gpts.slice().sort(function(a,b){return a[0]-b[0];});
-      var tail=Math.max(1,Math.floor(gsorted.length*0.05));
-      var augmented=gpts.slice();
-      // Add extra copies of extreme pixels to boost their weight in clustering
-      for(var ei=0;ei<tail;ei++){
-        for(var rep=0;rep<3;rep++){
-          augmented.push(gsorted[ei].slice());                    // dark end
-          augmented.push(gsorted[gsorted.length-1-ei].slice());  // light end
-        }
-      }
-      gpts=augmented;
-    }
-    var groupCtrs=kmeansGroup(gpts,slots[i]);
+    var groupCtrs=kmeansGroup(groups[i],slots[i]);
     for(var j=0;j<groupCtrs.length;j++)allCtrs.push(groupCtrs[j]);
   }
 
@@ -1528,6 +1584,57 @@ function matchImageRatio(){
   VX=0;VY=0;szCanvas();updSt();fitZoom();
   if(refSrc)cvtRef();
 }
+function autoDetectColors(){
+  if(!refSrc){alert('กรุณาโหลดภาพก่อน');return;}
+  var tmp=document.createElement('canvas');
+  var sw=Math.min(COLS,120),sh=Math.min(ROWS,120);
+  tmp.width=sw;tmp.height=sh;
+  var tx=tmp.getContext('2d');
+  tx.drawImage(refSrc,0,0,sw,sh);
+  var pix=tx.getImageData(0,0,sw,sh).data;
+  var colorSet={},totalPx=0,lumSum=0,lumSqSum=0;
+  var hueZones=new Array(12).fill(0);
+  for(var i=0;i<sw*sh;i++){
+    var idx=i*4,r=pix[idx],g=pix[idx+1],b=pix[idx+2],a=pix[idx+3];
+    if(a<30)continue;
+    totalPx++;
+    var qr=Math.round(r/8)*8,qg=Math.round(g/8)*8,qb=Math.round(b/8)*8;
+    colorSet[qr+','+qg+','+qb]=true;
+    var lum=0.299*r+0.587*g+0.114*b;
+    lumSum+=lum;lumSqSum+=lum*lum;
+    var mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+    if(mx-mn>20){
+      var h;
+      if(mx===r)h=((g-b)/(mx-mn)+6)%6;
+      else if(mx===g)h=(b-r)/(mx-mn)+2;
+      else h=(r-g)/(mx-mn)+4;
+      hueZones[Math.floor(h/0.5)%12]++;
+    }
+  }
+  if(!totalPx){alert('ไม่พบ pixel');return;}
+  var uniqueColors=Object.keys(colorSet).length;
+  var lumMean=lumSum/totalPx;
+  var lumStd=Math.sqrt(lumSqSum/totalPx-lumMean*lumMean);
+  var activeHues=hueZones.filter(function(c){return c/totalPx>0.01;}).length;
+  var score=(Math.min(uniqueColors,2000)/2000)*40+(Math.min(lumStd,80)/80)*30+(Math.min(activeHues,10)/10)*30;
+  var rec,reason;
+  if(score<25){rec=25;reason='ภาพเรียบง่าย';}
+  else if(score<40){rec=35;reason='ภาพระดับกลาง';}
+  else if(score<55){rec=50;reason='ภาพปานกลาง';}
+  else if(score<68){rec=65;reason='ภาพซับซ้อน';}
+  else if(score<80){rec=80;reason='ภาพซับซ้อนมาก';}
+  else{rec=95;reason='ภาพซับซ้อนสูงมาก';}
+  var stitches=COLS*ROWS;
+  if(stitches>60000)rec=Math.min(100,rec+5);
+  if(stitches>80000)rec=Math.min(100,rec+5);
+  var hint=document.getElementById('color-hint');
+  hint.style.display='block';
+  hint.innerHTML='<b>แนะนำ: '+rec+' สี</b> — '+reason+'<br>Unique: '+uniqueColors+' | Hue zones: '+activeHues+'/12 | Gradient: '+(lumStd).toFixed(0);
+  document.getElementById('nc').value=rec;
+  document.getElementById('ncv').textContent=rec;
+  if(refSrc)cvtRef();
+}
+
 function onNc(){document.getElementById('ncv').textContent=document.getElementById('nc').value;if(refSrc)cvtRef();}
 function onBg(){document.getElementById('bgv').textContent=document.getElementById('bg').value;if(refSrc)cvtRef();}
 
