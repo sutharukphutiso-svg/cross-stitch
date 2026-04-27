@@ -1043,6 +1043,30 @@ function cvtRef(){
   // Ensure we never exceed nc
   if(palette.length>nc)palette=palette.slice(0,nc);
 
+  // ── SNAP PALETTE TO DMC + DEDUPLICATE ───────────────────────────────────
+  // Replace each palette hex with the actual DMC hex colour it maps to,
+  // then collapse identical DMC entries so the grid never gets two palette
+  // slots that both point to the same DMC thread.
+  {
+    // Step A: convert every palette entry → its nearest DMC hex
+    var snapped=palette.map(function(h){ return nDMC(h).hex; });
+
+    // Step B: build a unique-DMC palette and a remapping table
+    var uniqueDMC=[];       // final palette (DMC hexes, no duplicates)
+    var remap=[];           // remap[oldIndex] = newIndex
+    var seen={};            // dmcHex → newIndex
+    for(var si=0;si<snapped.length;si++){
+      var sh=snapped[si].toLowerCase();
+      if(seen[sh]===undefined){
+        seen[sh]=uniqueDMC.length;
+        uniqueDMC.push(snapped[si]);
+      }
+      remap[si]=seen[sh];
+    }
+    palette=uniqueDMC;
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   pushH('Convert Image');
 
   // โ”€โ”€ STEP 1: Map ORIGINAL pixels to palette (not blurred - keeps detail) โ”€โ”€
