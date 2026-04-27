@@ -276,101 +276,149 @@ var SYM=[
   'S','L','7','3','V','W','N','M','H','K'
 ];
 
-// DMC DATABASE (abbreviated - key colors)
+// DMC DATABASE - Full 454 colors
 var DMC=[
-["blanc","White",255,255,255],[310,"Black",0,0,0],[321,"Red",196,40,54],
-[400,"Mahogany-DK",139,69,19],[402,"Mahogany-LT",255,178,122],[413,"Pewter-DK",84,84,84],
-[414,"Steel Gray",169,169,169],[415,"Pearl Gray",210,210,210],[433,"Brown-MED",138,90,50],
-[434,"Brown-LT",165,115,70],[435,"Brown-VY LT",188,142,100],[436,"Tan",205,165,115],
-[437,"Tan-LT",222,190,145],[469,"Avocado Green",100,130,60],[470,"Avocado-LT",130,165,80],
-[500,"Blue Green-VY DK",30,80,60],[501,"Blue Green-DK",50,110,85],[502,"Blue Green",80,140,110],
-[503,"Blue Green-MED",110,170,140],[519,"Sky Blue",140,190,220],[520,"Fern Green-DK",80,100,60],
-[522,"Fern Green",130,150,100],[523,"Fern Green-LT",160,175,130],[524,"Fern Green-VY LT",185,200,160],
-[535,"Ash Gray-VY LT",90,90,90],[543,"Beige Brown-ULT VY LT",225,210,190],
-[550,"Violet-VY DK",90,30,100],[552,"Violet-MED",130,60,140],[553,"Violet",165,100,175],
-[554,"Violet-LT",210,165,215],[561,"Jade-VY DK",40,110,80],[562,"Jade-MED",70,150,110],
-[563,"Jade-LT",115,185,150],[597,"Turquoise",70,175,185],[598,"Turquoise-LT",130,205,210],
-[600,"Cranberry-VY DK",185,30,80],[601,"Cranberry-DK",205,50,100],[602,"Cranberry-MED",220,80,120],
-[603,"Cranberry",235,120,155],[604,"Cranberry-LT",245,170,190],[606,"Orange Red-BRT",230,50,20],
-[608,"Orange-BRT",240,100,30],[610,"Drab Brown-DK",130,105,70],[611,"Drab Brown",155,130,90],
-[612,"Drab Brown-LT",185,165,130],[632,"Desert Sand-ULT DK",140,85,55],[640,"Beige Gray-VY DK",130,120,100],
-[642,"Beige Gray-DK",165,155,135],[644,"Beige Gray-MED",200,195,180],[645,"Beaver Gray-VY DK",100,95,90],
-[646,"Beaver Gray-DK",130,125,120],[647,"Beaver Gray-MED",165,160,155],[648,"Beaver Gray-LT",200,195,190],
-[666,"Red-BRT",215,30,45],[676,"Old Gold-LT",220,195,130],[677,"Old Gold-VY LT",235,220,175],
-[680,"Old Gold-DK",185,150,60],[699,"Green",20,120,40],[700,"Green-BRT",30,140,50],
-[701,"Green-LT",60,165,75],[702,"Kelly Green",80,185,95],[703,"Chartreuse",110,200,110],
-[712,"Cream",250,240,220],[718,"Plum",155,40,110],[720,"Orange Spice-DK",210,95,30],
-[721,"Orange Spice-MED",225,125,55],[722,"Orange Spice-LT",240,165,100],[725,"Topaz-MED LT",250,200,60],
-[726,"Topaz-LT",250,215,100],[727,"Topaz-VY LT",255,235,170],[729,"Old Gold-MED",200,165,70],
-[738,"Tan-VY LT",230,200,155],[739,"Tan-ULT VY LT",245,225,195],[740,"Tangerine",250,140,20],
-[741,"Tangerine-MED",250,165,50],[742,"Tangerine-LT",250,195,95],[743,"Yellow-MED",250,220,120],
-[744,"Yellow-PALE",250,235,165],[746,"Off White",255,250,230],[747,"Sky Blue-VY LT",220,245,250],
-[754,"Peach-LT",245,195,165],[758,"Terra Cotta-VY LT",235,175,150],[760,"Salmon",235,155,140],
-[761,"Salmon-LT",245,185,175],[762,"Pearl Gray-VY LT",235,235,235],[772,"Yellow Green-VY LT",215,230,190],
-[775,"Baby Blue-VY LT",210,235,245],[776,"Pink-MED",245,170,175],[780,"Topaz-ULT VY DK",155,110,30],
-[781,"Topaz-VY DK",175,130,45],[782,"Topaz-DK",195,150,55],[783,"Topaz-MED",215,175,80],
-[791,"Cornflower Blue-VY DK",65,75,135],[792,"Cornflower Blue-DK",85,100,165],
-[793,"Cornflower Blue-MED",115,130,190],[794,"Cornflower Blue-LT",155,170,215],
-[796,"Royal Blue-DK",30,70,150],[797,"Royal Blue",40,90,175],[798,"Delft Blue-DK",70,115,185],
-[799,"Delft Blue-MED",105,145,205],[800,"Delft Blue-PALE",175,200,225],[801,"Coffee Brown-DK",110,65,35],
-[806,"Peacock Blue-DK",45,150,175],[807,"Peacock Blue",75,175,200],[813,"Blue-LT",155,190,220],
-[814,"Garnet-DK",140,20,40],[815,"Garnet-MED",165,30,55],[816,"Garnet",185,40,65],
-[817,"Coral Red-VY DK",195,50,50],[818,"Baby Pink",255,205,200],[819,"Baby Pink-LT",255,225,220],
-[822,"Beige Gray-LT",220,215,195],[823,"Navy Blue-DK",30,40,105],[824,"Blue-VY DK",45,95,150],
-[825,"Blue-DK",60,120,175],[826,"Blue-MED",85,145,195],[827,"Blue-VY LT",175,210,235],
-[838,"Beige Brown-VY DK",95,70,45],[839,"Beige Brown-DK",120,90,60],[840,"Beige Brown-MED",150,115,80],
-[841,"Beige Brown-LT",185,155,120],[842,"Beige Brown-VY LT",215,190,160],[869,"Hazel Nut Brown-VY DK",130,90,45],
-[890,"Pistachio Green-ULT DK",30,80,35],[891,"Carnation-DK",240,90,110],[892,"Carnation-MED",245,120,135],
-[893,"Carnation-LT",250,155,165],[894,"Carnation-VY LT",255,190,195],[895,"Hunter Green-VY DK",30,90,40],
-[898,"Coffee Brown-VY DK",90,50,25],[899,"Rose-MED",240,130,145],[900,"Burnt Orange-DK",200,70,20],
-[902,"Garnet-VY DK",120,25,45],[904,"Parrot Green-VY DK",70,135,50],[905,"Parrot Green-DK",90,165,65],
-[906,"Parrot Green-MED",120,195,90],[907,"Parrot Green-LT",160,220,120],[909,"Emerald Green-VY DK",25,130,60],
-[910,"Emerald Green-DK",35,155,75],[911,"Emerald Green-MED",50,175,90],[912,"Emerald Green-LT",70,200,110],
-[913,"Nile Green-MED",120,200,150],[918,"Red Copper-DK",155,65,35],[919,"Red Copper",185,85,45],
-[920,"Copper-MED",200,105,60],[921,"Copper",215,125,75],[922,"Copper-LT",230,150,100],
-[924,"Gray Green-VY DK",75,105,95],[926,"Gray Green-MED",130,160,150],[927,"Gray Green-LT",170,195,185],
-[928,"Gray Green-VY LT",205,220,215],[930,"Antique Blue-DK",80,105,130],[931,"Antique Blue-MED",110,140,165],
-[932,"Antique Blue-LT",155,180,200],[937,"Avocado Green-MED",95,125,60],[938,"Coffee Brown-ULT DK",70,40,20],
-[943,"Aquamarine-MED",50,185,160],[945,"Tawny",245,190,155],[946,"Burnt Orange-MED",220,95,25],
-[947,"Burnt Orange",235,120,40],[948,"Peach-VY LT",255,225,210],[950,"Desert Sand-LT",225,185,155],
-[951,"Tawny-LT",250,215,185],[954,"Nile Green",110,195,140],[955,"Nile Green-LT",155,220,175],
-[956,"Geranium",245,120,115],[958,"Sea Green-DK",50,185,165],[959,"Sea Green-MED",80,200,185],
-[961,"Dusty Rose-DK",210,110,120],[962,"Dusty Rose-MED",230,145,150],[963,"Dusty Rose-ULT VY LT",255,210,210],
-[966,"Baby Green-MED",170,215,175],[970,"Pumpkin-LT",240,135,45],[971,"Pumpkin",240,120,20],
-[972,"Canary-DEEP",250,175,20],[975,"Golden Brown-DK",150,95,30],[976,"Golden Brown-MED",200,145,70],
-[977,"Golden Brown-LT",225,175,105],[986,"Forest Green-VY DK",50,90,40],[987,"Forest Green-DK",70,120,55],
-[988,"Forest Green-MED",95,150,75],[989,"Forest Green",120,175,100],[991,"Aquamarine-DK",50,135,115],
-[992,"Aquamarine-MED",75,170,150],[993,"Aquamarine-LT",115,195,175],[995,"Electric Blue-DK",30,145,210],
-[3011,"Khaki Green-DK",130,140,80],[3012,"Khaki Green-MED",155,165,100],[3013,"Khaki Green-LT",185,195,140],
-[3021,"Brown Gray-VY DK",75,70,55],[3031,"Mocha Brown-VY DK",80,60,40],[3032,"Mocha Brown-MED",175,155,130],
-[3033,"Mocha Brown-VY LT",215,200,180],[3041,"Antique Violet-MED",160,130,155],[3042,"Antique Violet-LT",195,170,190],
-[3045,"Yellow Beige-DK",195,165,105],[3046,"Yellow Beige-MED",215,190,140],[3047,"Yellow Beige-LT",235,220,185],
-[3051,"Green Gray-DK",90,105,70],[3052,"Green Gray-MED",130,150,105],[3053,"Green Gray",160,175,135],
-[3325,"Baby Blue-LT",175,205,230],[3326,"Rose-LT",250,175,185],[3328,"Salmon-DK",220,120,110],
-[3340,"Apricot-MED",250,150,100],[3341,"Apricot",250,180,140],[3345,"Hunter Green-DK",40,105,45],
-[3346,"Hunter Green",60,130,60],[3347,"Yellow Green-MED",95,160,90],[3348,"Yellow Green-LT",175,210,155],
-[3350,"Dusty Rose-ULT DK",190,75,100],[3354,"Dusty Rose-LT",235,175,180],[3362,"Pine Green-DK",80,110,65],
-[3363,"Pine Green-MED",105,140,85],[3364,"Pine Green",140,170,115],[3371,"Black Brown",35,20,10],
-[3685,"Mauve-VY DK",145,40,70],[3687,"Mauve",200,115,130],[3688,"Mauve-MED",225,165,175],
-[3689,"Mauve-LT",245,195,200],[3705,"Melon-DK",250,120,110],[3712,"Salmon-MED",235,140,125],
-[3721,"Shell Pink-DK",185,95,95],[3731,"Dusty Rose-VY DK",210,100,115],[3733,"Dusty Rose",235,145,155],
-[3746,"Blue Violet-DK",110,100,175],[3747,"Blue Violet-VY LT",200,205,235],[3750,"Antique Blue-VY DK",50,75,105],
-[3752,"Antique Blue-VY LT",185,200,220],[3755,"Baby Blue",120,165,205],[3760,"Wedgewood-MED",60,125,170],
-[3761,"Sky Blue-LT",145,195,225],[3765,"Peacock Blue-VY DK",35,130,155],[3768,"Gray Green-DK",95,125,120],
-[3776,"Mahogany-LT",200,130,75],[3777,"Terra Cotta-VY DK",165,70,55],[3778,"Terra Cotta-LT",210,145,125],
-[3781,"Mocha Brown-DK",120,95,70],[3782,"Mocha Brown-LT",200,180,155],[3799,"Pewter Gray-VY DK",65,65,65],
-[3820,"Straw-DK",220,185,90],[3821,"Straw",235,205,120],[3822,"Straw-LT",245,225,165],
-[3823,"Yellow-ULT PALE",255,250,215],[3824,"Apricot-LT",250,195,170],[3825,"Pumpkin-PALE",250,175,110],
-[3826,"Golden Brown",185,130,60],[3827,"Golden Brown-PALE",240,190,120],[3828,"Hazel Nut Brown",175,140,90],
-[3829,"Old Gold-VY DK",160,125,35],[3830,"Terra Cotta",185,90,70],[3831,"Raspberry-DK",175,40,70],
-[3832,"Raspberry-MED",205,75,100],[3833,"Raspberry-LT",225,120,140],[3834,"Grape-DK",100,55,100],
-[3835,"Grape-MED",140,90,140],[3836,"Grape-LT",180,140,185],[3837,"Lavender-ULT DK",110,65,140],
-[3838,"Lavender-DK",100,100,175],[3839,"Lavender-MED",130,130,200],[3840,"Lavender-LT",175,175,220],
-[3847,"Teal Green-DK",45,135,120],[3848,"Teal Green-MED",65,160,145],[3849,"Teal Green-LT",90,185,170],
-[3853,"Autumn Gold-DK",225,140,45],[3854,"Autumn Gold-MED",235,165,80],[3855,"Autumn Gold-LT",245,200,130],
-[3856,"Mahogany-ULT VY LT",255,215,185],[3857,"Rosewood-DK",110,40,30],[3858,"Rosewood-MED",155,75,60],
-[3862,"Mocha Beige-DK",145,115,80],[3863,"Mocha Beige-MED",175,145,105],[3864,"Mocha Beige-LT",210,185,155],
-[3865,"Winter White",250,248,240],[3866,"Mocha Brown-ULT VY LT",245,240,230]
+["blanc","White",255,255,255],["ecru","Ecru",240,234,218],[310,"Black",0,0,0],
+[321,"Red",196,40,54],[326,"Rose-VY DK",174,27,66],[333,"Blue Violet-VY DK",72,55,132],
+[334,"Baby Blue-MED",102,147,189],[335,"Rose",220,63,97],[336,"Navy Blue",38,55,120],
+[340,"Blue Violet-MED",138,129,183],[341,"Blue Violet-LT",163,166,207],[347,"Salmon-VY DK",178,33,35],
+[349,"Coral-DK",196,48,43],[350,"Coral-MED",210,74,62],[351,"Coral",224,108,90],
+[352,"Coral-LT",240,153,133],[353,"Peach",250,192,172],[355,"Terra Cotta-DK",165,68,53],
+[356,"Terra Cotta-MED",192,100,82],[367,"Pistachio Green-DK",88,121,74],[368,"Pistachio Green-LT",163,195,148],
+[369,"Pistachio Green-VY LT",209,230,196],[370,"Mustard-MED",168,141,72],[371,"Mustard",183,158,91],
+[372,"Mustard-LT",201,179,118],[400,"Mahogany-DK",139,69,19],[402,"Mahogany-LT",225,158,95],
+[407,"Desert Sand-MED",188,126,97],[413,"Pewter-DK",84,84,84],[414,"Steel Gray",145,145,145],
+[415,"Pearl Gray",201,201,201],[420,"Hazel Nut Brown-DK",151,103,52],[421,"Hazel Nut Brown",173,127,73],
+[422,"Hazel Nut Brown-LT",196,160,108],[433,"Brown-MED",119,74,37],[434,"Brown-LT",155,97,54],
+[435,"Brown-VY LT",178,122,73],[436,"Tan",200,155,97],[437,"Tan-LT",218,183,134],
+[444,"Lemon-DK",251,196,0],[445,"Lemon-LT",255,245,153],[451,"Shell Gray-DK",152,134,122],
+[452,"Shell Gray-MED",185,171,159],[453,"Shell Gray-LT",213,203,192],[469,"Avocado Green",96,122,52],
+[470,"Avocado Green-LT",130,161,76],[471,"Avocado Green-VY LT",163,188,112],[472,"Avocado Green-ULT LT",197,214,152],
+[498,"Christmas Red-DK",160,24,40],[500,"Blue Green-VY DK",30,75,55],[501,"Blue Green-DK",47,100,76],
+[502,"Blue Green",75,131,103],[503,"Blue Green-MED",107,161,132],[504,"Blue Green-VY LT",180,209,193],
+[517,"Wedgewood-DK",57,111,148],[518,"Wedgewood-LT",78,148,180],[519,"Sky Blue",132,182,210],
+[520,"Fern Green-DK",76,95,57],[522,"Fern Green",122,143,96],[523,"Fern Green-LT",153,168,124],
+[524,"Fern Green-VY LT",181,193,155],[535,"Ash Gray-VY LT",92,92,92],[543,"Beige Brown-ULT VY LT",219,203,182],
+[550,"Violet-VY DK",83,24,90],[552,"Violet-MED",120,53,127],[553,"Violet",158,91,160],
+[554,"Violet-LT",202,157,203],[561,"Jade-VY DK",37,99,71],[562,"Jade-MED",64,140,100],
+[563,"Jade-LT",108,172,139],[564,"Jade-VY LT",155,199,173],[580,"Moss Green-DK",99,104,38],
+[581,"Moss Green",121,127,47],[597,"Turquoise",63,163,172],[598,"Turquoise-LT",120,193,198],
+[600,"Cranberry-VY DK",175,23,74],[601,"Cranberry-DK",196,44,94],[602,"Cranberry-MED",213,73,113],
+[603,"Cranberry",229,113,147],[604,"Cranberry-LT",242,162,181],[605,"Cranberry-VY LT",251,199,210],
+[606,"Orange Red-BRT",226,44,15],[608,"Orange-BRT",237,95,25],[610,"Drab Brown-DK",123,98,63],
+[611,"Drab Brown",148,123,84],[612,"Drab Brown-LT",178,158,122],[613,"Drab Brown-VY LT",206,192,163],
+[632,"Desert Sand-ULT DK",133,79,48],[640,"Beige Gray-VY DK",124,114,95],[642,"Beige Gray-DK",158,148,127],
+[644,"Beige Gray-MED",195,190,173],[645,"Beaver Gray-VY DK",97,91,86],[646,"Beaver Gray-DK",126,120,113],
+[647,"Beaver Gray-MED",159,153,147],[648,"Beaver Gray-LT",194,189,183],[666,"Christmas Red-BRT",208,28,38],
+[676,"Old Gold-LT",213,188,118],[677,"Old Gold-VY LT",228,211,162],[680,"Old Gold-DK",178,142,50],
+[699,"Christmas Green",18,112,36],[700,"Christmas Green-BRT",26,131,45],[701,"Christmas Green-LT",54,156,67],
+[702,"Kelly Green",74,175,87],[703,"Chartreuse",104,192,103],[704,"Chartreuse-BRT",148,208,132],
+[712,"Cream",247,235,210],[718,"Plum",146,33,100],[720,"Orange Spice-DK",203,87,24],
+[721,"Orange Spice-MED",218,118,48],[722,"Orange Spice-LT",234,158,90],[725,"Topaz",247,192,50],
+[726,"Topaz-LT",248,209,90],[727,"Topaz-VY LT",252,231,158],[728,"Topaz-MED",240,178,52],
+[729,"Old Gold-MED",194,157,62],[730,"Olive Green-VY DK",111,104,24],[731,"Olive Green-DK",130,123,35],
+[732,"Olive Green",146,140,48],[733,"Olive Green-MED",169,164,74],[734,"Olive Green-LT",193,190,109],
+[738,"Tan-VY LT",225,194,148],[739,"Tan-ULT VY LT",240,220,188],[740,"Tangerine",247,133,15],
+[741,"Tangerine-MED",248,157,40],[742,"Tangerine-LT",249,187,85],[743,"Yellow-MED",249,213,110],
+[744,"Yellow-PALE",249,228,153],[745,"Yellow-LT PALE",251,239,185],[746,"Off White",253,247,224],
+[747,"Sky Blue-VY LT",215,240,245],[754,"Peach-LT",242,190,158],[758,"Terra Cotta-VY LT",229,168,143],
+[760,"Salmon",229,148,132],[761,"Salmon-LT",241,179,168],[762,"Pearl Gray-VY LT",230,230,230],
+[772,"Yellow Green-VY LT",210,225,183],[775,"Baby Blue-VY LT",204,228,240],[776,"Pink-MED",243,163,169],
+[778,"Antique Mauve-VY LT",207,170,172],[779,"Cocoa-DK",98,72,62],[780,"Topaz-ULT VY DK",149,103,24],
+[781,"Topaz-VY DK",168,124,37],[782,"Topaz-DK",186,143,46],[783,"Topaz-MED",207,167,68],
+[791,"Cornflower Blue-VY DK",60,68,120],[792,"Cornflower Blue-DK",79,92,148],
+[793,"Cornflower Blue-MED",109,122,174],[794,"Cornflower Blue-LT",148,163,203],
+[796,"Royal Blue-DK",26,63,135],[797,"Royal Blue",35,82,158],[798,"Delft Blue-DK",64,107,170],
+[799,"Delft Blue-MED",98,136,190],[800,"Delft Blue-PALE",169,194,217],[801,"Coffee Brown-DK",103,58,28],
+[803,"Baby Blue-ULT VY DK",45,76,121],[806,"Peacock Blue-DK",40,141,163],[807,"Peacock Blue",68,165,185],
+[809,"Delft Blue",133,158,196],[813,"Blue-LT",148,183,212],[814,"Garnet-DK",132,14,34],
+[815,"Garnet-MED",155,24,46],[816,"Garnet",175,33,56],[817,"Coral Red-VY DK",188,42,42],
+[818,"Baby Pink",254,198,194],[819,"Baby Pink-LT",254,219,215],[820,"Royal Blue-VY DK",19,50,112],
+[822,"Beige Gray-LT",215,209,189],[823,"Navy Blue-DK",25,34,95],[824,"Blue-VY DK",40,87,135],
+[825,"Blue-DK",53,112,160],[826,"Blue-MED",77,135,180],[827,"Blue-VY LT",169,203,228],
+[828,"Blue-ULT VY LT",199,224,237],[829,"Golden Olive-VY DK",130,108,52],[830,"Golden Olive-DK",149,126,63],
+[831,"Golden Olive-MED",167,143,74],[832,"Golden Olive",187,162,85],[833,"Golden Olive-LT",205,183,107],
+[834,"Golden Olive-VY LT",223,205,138],[835,"Golden Olive-ULT VY LT",238,222,171],
+[838,"Beige Brown-VY DK",88,63,38],[839,"Beige Brown-DK",113,84,52],[840,"Beige Brown-MED",142,107,68],
+[841,"Beige Brown-LT",179,148,111],[842,"Beige Brown-VY LT",208,182,151],[844,"Beaver Gray-ULT DK",78,74,70],
+[869,"Hazel Nut Brown-VY DK",122,82,38],[890,"Pistachio Green-ULT DK",27,72,30],
+[891,"Carnation-DK",234,82,100],[892,"Carnation-MED",240,114,127],[893,"Carnation-LT",246,148,157],
+[894,"Carnation-VY LT",251,184,189],[895,"Hunter Green-VY DK",27,82,36],[898,"Coffee Brown-VY DK",82,42,18],
+[899,"Rose-MED",235,123,137],[900,"Burnt Orange-DK",191,63,14],[902,"Garnet-VY DK",112,18,36],
+[904,"Parrot Green-VY DK",63,126,42],[905,"Parrot Green-DK",82,154,55],[906,"Parrot Green-MED",112,184,80],
+[907,"Parrot Green-LT",152,213,110],[909,"Emerald Green-VY DK",20,120,52],[910,"Emerald Green-DK",29,145,65],
+[911,"Emerald Green-MED",43,163,79],[912,"Emerald Green-LT",60,186,97],[913,"Nile Green-MED",113,188,139],
+[915,"Plum-DK",129,15,77],[917,"Plum-MED",161,24,101],[918,"Red Copper-DK",148,57,28],
+[919,"Red Copper",176,76,36],[920,"Copper-MED",191,96,48],[921,"Copper",207,116,61],
+[922,"Copper-LT",222,141,83],[924,"Gray Green-VY DK",68,96,86],[926,"Gray Green-MED",122,151,140],
+[927,"Gray Green-LT",163,187,178],[928,"Gray Green-VY LT",198,214,209],[930,"Antique Blue-DK",72,96,118],
+[931,"Antique Blue-MED",101,129,153],[932,"Antique Blue-LT",147,170,188],[934,"Black Avocado",49,58,34],
+[935,"Avocado Green-DK",68,83,44],[936,"Avocado Green-VY DK",57,72,34],[937,"Avocado Green-MED",87,114,52],
+[938,"Coffee Brown-ULT DK",62,33,13],[939,"Navy Blue-VY DK",19,27,78],[943,"Aquamarine-MED",44,175,150],
+[945,"Tawny",240,183,146],[946,"Burnt Orange-MED",212,88,19],[947,"Burnt Orange",228,114,32],
+[948,"Peach-VY LT",252,219,202],[950,"Desert Sand-LT",218,178,147],[951,"Tawny-LT",246,208,176],
+[954,"Nile Green",103,185,130],[955,"Nile Green-LT",148,213,165],[956,"Geranium",240,112,106],
+[957,"Geranium-PALE",250,171,166],[958,"Sea Green-DK",43,175,153],[959,"Sea Green-MED",72,191,170],
+[961,"Dusty Rose-DK",203,102,113],[962,"Dusty Rose-MED",224,138,144],[963,"Dusty Rose-ULT VY LT",251,203,204],
+[964,"Sea Green-LT",138,215,201],[966,"Baby Green-MED",162,207,167],[970,"Pumpkin-LT",234,127,36],
+[971,"Pumpkin",234,113,14],[972,"Canary-DEEP",246,168,12],[973,"Canary-BRT",255,224,0],
+[975,"Golden Brown-DK",143,88,22],[976,"Golden Brown-MED",193,137,60],[977,"Golden Brown-LT",218,167,94],
+[986,"Forest Green-VY DK",43,82,34],[987,"Forest Green-DK",62,111,46],[988,"Forest Green-MED",87,141,65],
+[989,"Forest Green",112,165,88],[991,"Aquamarine-DK",43,126,105],[992,"Aquamarine-MED",68,161,138],
+[993,"Aquamarine-LT",107,185,162],[995,"Electric Blue-DK",22,133,196],[996,"Electric Blue-MED",49,168,220],
+[3011,"Khaki Green-DK",124,133,72],[3012,"Khaki Green-MED",148,158,90],[3013,"Khaki Green-LT",177,186,130],
+[3021,"Brown Gray-VY DK",68,63,47],[3022,"Brown Gray-MED",135,131,110],[3023,"Brown Gray-LT",166,162,143],
+[3024,"Brown Gray-VY LT",197,194,178],[3031,"Mocha Brown-VY DK",73,52,31],[3032,"Mocha Brown-MED",168,147,120],
+[3033,"Mocha Brown-VY LT",208,193,171],[3041,"Antique Violet-MED",153,122,147],[3042,"Antique Violet-LT",188,163,183],
+[3045,"Yellow Beige-DK",188,157,97],[3046,"Yellow Beige-MED",209,183,129],[3047,"Yellow Beige-LT",229,213,174],
+[3051,"Green Gray-DK",83,97,61],[3052,"Green Gray-MED",123,143,96],[3053,"Green Gray",153,168,124],
+[3064,"Desert Sand",187,122,89],[3072,"Beaver Gray-VY LT",223,223,223],[3078,"Golden Yellow-VY LT",253,246,183],
+[3325,"Baby Blue-LT",168,198,222],[3326,"Rose-LT",245,168,178],[3328,"Salmon-DK",213,112,101],
+[3340,"Apricot-MED",246,143,91],[3341,"Apricot",248,173,129],[3342,"Apricot-LT",250,197,161],
+[3345,"Hunter Green-DK",36,96,40],[3346,"Hunter Green",54,120,52],[3347,"Yellow Green-MED",88,151,81],
+[3348,"Yellow Green-LT",168,204,147],[3350,"Dusty Rose-ULT DK",183,65,91],[3354,"Dusty Rose-LT",229,168,172],
+[3362,"Pine Green-DK",73,101,57],[3363,"Pine Green-MED",97,131,76],[3364,"Pine Green",131,161,103],
+[3371,"Black Brown",28,14,5],[3607,"Plum-LT",189,62,130],[3608,"Plum-VY LT",221,135,174],
+[3609,"Plum-ULT LT",238,180,207],[3685,"Mauve-VY DK",136,33,60],[3687,"Mauve",193,106,120],
+[3688,"Mauve-MED",218,157,165],[3689,"Mauve-LT",239,188,194],[3705,"Melon-DK",246,111,100],
+[3706,"Melon-MED",250,148,138],[3708,"Melon-LT",253,189,183],[3712,"Salmon-MED",229,131,115],
+[3713,"Salmon-VY LT",250,210,203],[3716,"Dusty Rose-VY LT",251,185,185],[3721,"Shell Pink-DK",178,86,86],
+[3722,"Shell Pink-MED",198,116,104],[3726,"Antique Mauve-DK",157,99,109],[3727,"Antique Mauve-LT",218,178,182],
+[3731,"Dusty Rose-VY DK",204,91,106],[3733,"Dusty Rose",229,137,147],[3740,"Antique Violet-DK",119,90,112],
+[3743,"Antique Violet-VY LT",213,204,212],[3746,"Blue Violet-DK",103,93,161],[3747,"Blue Violet-VY LT",194,198,228],
+[3750,"Antique Blue-VY DK",45,68,96],[3752,"Antique Blue-VY LT",179,193,211],[3753,"Antique Blue-ULT VY LT",213,223,232],
+[3755,"Baby Blue",113,156,194],[3756,"Baby Blue-ULT VY LT",233,243,249],[3757,"Salmon-VY DK",166,63,58],
+[3758,"Antique Blue-MED LT",123,153,172],[3760,"Wedgewood-MED",54,116,157],[3761,"Sky Blue-LT",138,187,215],
+[3765,"Peacock Blue-VY DK",28,121,143],[3766,"Peacock Blue-LT",101,181,196],[3768,"Gray Green-DK",87,115,109],
+[3770,"Tawny-VY LT",253,233,218],[3771,"Terra Cotta-ULT VY LT",244,200,183],[3772,"Desert Sand-VY DK",159,98,68],
+[3773,"Desert Sand-DK",178,118,86],[3774,"Desert Sand-VY LT",238,211,192],[3776,"Mahogany-LT",195,122,67],
+[3777,"Terra Cotta-VY DK",158,62,47],[3778,"Terra Cotta-LT",203,136,115],[3779,"Terra Cotta-ULT VY LT",248,210,198],
+[3781,"Mocha Brown-DK",113,87,60],[3782,"Mocha Brown-LT",193,172,145],[3787,"Brown Gray-DK",97,91,77],
+[3790,"Beige Gray-ULT DK",110,98,79],[3799,"Pewter Gray-VY DK",57,57,57],[3801,"Melon-VY DK",226,56,72],
+[3802,"Antique Mauve-VY DK",128,67,78],[3803,"Mauve-DK",163,46,84],[3804,"Cyclamen Pink-DK",220,49,113],
+[3805,"Cyclamen Pink",232,81,136],[3806,"Cyclamen Pink-LT",242,138,170],[3807,"Cornflower Blue",87,102,148],
+[3808,"Turquoise-ULT VY DK",41,107,115],[3809,"Turquoise-VY DK",50,130,139],[3810,"Turquoise-DK",58,151,161],
+[3811,"Turquoise-VY LT",176,220,223],[3812,"Sea Green-VY DK",33,131,116],[3813,"Blue Green-LT",157,199,179],
+[3814,"Aquamarine-DK",43,126,107],[3815,"Jade-DK",49,117,86],[3816,"Jade-MED LT",96,158,122],
+[3817,"Jade-LT",142,188,157],[3818,"Emerald Green-ULT VY DK",13,95,49],[3819,"Moss Green-LT",205,213,107],
+[3820,"Straw-DK",213,177,80],[3821,"Straw",228,197,108],[3822,"Straw-LT",239,218,152],
+[3823,"Yellow-ULT PALE",253,247,209],[3824,"Apricot-LT",247,188,162],[3825,"Pumpkin-PALE",247,168,101],
+[3826,"Golden Brown",178,122,52],[3827,"Golden Brown-PALE",233,182,111],[3828,"Hazel Nut Brown",167,132,80],
+[3829,"Old Gold-VY DK",153,117,27],[3830,"Terra Cotta",178,82,60],[3831,"Raspberry-DK",168,32,60],
+[3832,"Raspberry-MED",197,65,90],[3833,"Raspberry-LT",218,112,131],[3834,"Grape-DK",94,47,93],
+[3835,"Grape-MED",132,82,130],[3836,"Grape-LT",172,132,172],[3837,"Lavender-ULT DK",102,57,130],
+[3838,"Lavender-DK",93,92,162],[3839,"Lavender-MED",121,121,187],[3840,"Lavender-LT",167,167,210],
+[3841,"Baby Blue-PALE",186,215,232],[3842,"Wedgewood-DK",48,100,131],[3843,"Electric Blue",28,151,211],
+[3844,"Turquoise-BRT DK",0,167,187],[3845,"Turquoise-BRT MED",0,186,202],[3846,"Turquoise-BRT LT",0,204,214],
+[3847,"Teal Green-DK",38,124,109],[3848,"Teal Green-MED",57,148,132],[3849,"Teal Green-LT",80,170,152],
+[3850,"Green-DK",34,127,103],[3851,"Green-LT",57,163,130],[3852,"Straw-VY DK",195,155,56],
+[3853,"Autumn Gold-DK",218,130,37],[3854,"Autumn Gold-MED",228,157,68],[3855,"Autumn Gold-LT",240,194,119],
+[3856,"Mahogany-ULT VY LT",250,207,176],[3857,"Rosewood-DK",102,32,21],[3858,"Rosewood-MED",147,65,50],
+[3859,"Rosewood-LT",186,128,109],[3860,"Cocoa",120,90,78],[3861,"Cocoa-LT",157,130,117],
+[3862,"Mocha Beige-DK",138,107,72],[3863,"Mocha Beige-MED",167,137,96],[3864,"Mocha Beige-LT",202,177,146],
+[3865,"Winter White",247,245,235],[3866,"Mocha Brown-ULT VY LT",242,237,225],
+[4146,"Desert Sand-VY LT",241,216,200],[4160,"Wedgewood-VY LT",204,218,228],[4161,"Baby Blue-LT",185,208,225],
+[4170,"Melon-VY LT",254,214,204],[4171,"Melon-PALE",255,231,224]
 ];
 
 // STATE
@@ -393,7 +441,7 @@ function h2r(h){var m=h.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);ret
 function r2h(r,g,b){return'#'+[r,g,b].map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');}
 function nRgb(px,pal){var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var d=Math.pow(px[0]-pal[i][0],2)+Math.pow(px[1]-pal[i][1],2)+Math.pow(px[2]-pal[i][2],2);if(d<bd){bd=d;b=i;}}return b;}
 function nHex(px,pal){var lab=rgb2lab(px[0],px[1],px[2]);var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var rgb=h2r(pal[i]);if(!rgb)continue;var pl=rgb2lab(rgb[0],rgb[1],rgb[2]);var d=Math.pow(lab[0]-pl[0],2)+Math.pow(lab[1]-pl[1],2)+Math.pow(lab[2]-pl[2],2);if(d<bd){bd=d;b=i;}}return b;}
-function nDMC(hex){var rgb=h2r(hex);if(!rgb)return{num:'--',name:'Unknown',hex:hex};var b=null,bd=1e9;for(var i=0;i<DMC.length;i++){var e=DMC[i];var d=Math.pow(rgb[0]-e[2],2)+Math.pow(rgb[1]-e[3],2)+Math.pow(rgb[2]-e[4],2);if(d<bd){bd=d;b={num:e[0],name:e[1],hex:r2h(e[2],e[3],e[4])};}}return b||{num:'--',name:'Unknown',hex:hex};}
+function nDMC(hex){var rgb=h2r(hex);if(!rgb)return{num:'--',name:'Unknown',hex:hex};var lab=rgb2lab(rgb[0],rgb[1],rgb[2]);var b=null,bd=1e9;for(var i=0;i<DMC.length;i++){var e=DMC[i];var el=rgb2lab(e[2],e[3],e[4]);var d=Math.pow(lab[0]-el[0],2)+Math.pow(lab[1]-el[1],2)+Math.pow(lab[2]-el[2],2);if(d<bd){bd=d;b={num:e[0],name:e[1],hex:r2h(e[2],e[3],e[4])};}}return b||{num:'--',name:'Unknown',hex:hex};}
 function inB(c,r){return c>=0&&c<COLS&&r>=0&&r<ROWS;}
 function getCell(e){var rc=gc.getBoundingClientRect();var ds=Math.max(0.1,CELL*ZL);return[Math.floor((e.clientX-rc.left)/ds+VX),Math.floor((e.clientY-rc.top)/ds+VY)];}
 
@@ -520,11 +568,13 @@ area.addEventListener('mousedown',function(e){
     return;
   }
   if(tool==='move'){painting=true;area.style.cursor='grabbing';panSt={x:e.clientX,y:e.clientY,vx:VX,vy:VY};return;}
-  if(tool==='pick'){if(inB(c,r)&&grid[r][c]>=0){SI=grid[r][c];updPal();updSS();}return;}
+  if(tool==='pick'){if(inB(c,r)&&grid[r][c]>=0){SI=grid[r][c];updPal();updSS();highlightDMC(SI);}return;}
   if(tool==='fill'){if(!inB(c,r))return;pushH('Fill');flood(c,r,grid[r][c],SI);render();return;}
   if(tool==='line'){lineSt=[c,r];return;}
   if(tool==='select'){selRect={x:c,y:r,w:0,h:0};return;}
   pushH(tool==='erase'?'Erase':'Paint');painting=true;paintCell(c,r);render();
+  // After paint/erase, show selected color in DMC list
+  if(inB(c,r)&&grid[r][c]>=0)highlightDMC(SI);
 });
 area.addEventListener('mousemove',function(e){
   var p=getCell(e),c=p[0],r=p[1];
@@ -532,6 +582,10 @@ area.addEventListener('mousemove',function(e){
   if(tool==='move'&&painting&&panSt){var ds=Math.max(.1,CELL*ZL);VX=Math.max(0,panSt.vx-(e.clientX-panSt.x)/ds);VY=Math.max(0,panSt.vy-(e.clientY-panSt.y)/ds);render();return;}
   if(tool==='select'&&selRect&&e.buttons){selRect.w=c-selRect.x+1;selRect.h=r-selRect.y+1;render();return;}
   if(painting&&(tool==='paint'||tool==='erase')){paintCell(c,r);render();}
+  // Hover: show which DMC color is under cursor (pick/move tools)
+  if((tool==='pick'||tool==='move')&&inB(c,r)&&grid[r][c]>=0){
+    highlightDMC(grid[r][c]);
+  }
 });
 area.addEventListener('mouseup',function(e){
   var p=getCell(e),c=p[0],r=p[1];
@@ -559,7 +613,7 @@ function clearCanvas(){pushH('Clear');grid=Array.from({length:ROWS},function(){r
 // PALETTE
 function updPal(){
   var el=document.getElementById('pgrid');
-  el.innerHTML=palette.map(function(h,i){return '<div class="sw'+(i===SI?' sel':'')+'" style="background:'+h+'" title="'+h+'" onclick="SI='+i+';updPal();updSS();if(replaceStep===2)updReplaceBar();" ondblclick="editCol('+i+')"></div>';}).join('')+'<div class="sw-add" onclick="addCol()" title="Add">+</div>';
+  el.innerHTML=palette.map(function(h,i){return '<div class="sw'+(i===SI?' sel':'')+'" style="background:'+h+'" title="'+h+'" onclick="SI='+i+';updPal();updSS();highlightDMC('+i+');if(replaceStep===2)updReplaceBar();" ondblclick="editCol('+i+')"></div>';}).join('')+'<div class="sw-add" onclick="addCol()" title="Add">+</div>';
   document.getElementById('pcnt').textContent=palette.length;
   updSS();updDMC();
 }
@@ -598,50 +652,47 @@ document.addEventListener('click',function(e){
   if(!el.contains(e.target))cpX();
 });
 
-// DMC
-function updDMC(){
-  var cnt=new Array(palette.length).fill(0);
-  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
-  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
-  var el=document.getElementById('dlist');
-  if(!sorted.length){el.innerHTML='<div style="color:#8a847c;font-size:11px">Convert an image first</div>';return;}
-  // Merge palette entries that map to the same DMC number
-  var dmcMap={};
-  sorted.forEach(function(x){
-    var dmc=nDMC(x.h);
-    var key=String(dmc.num);
-    if(dmcMap[key]){
-      dmcMap[key].n+=x.n;
-      dmcMap[key].hexes.push(x.h);
-    } else {
-      dmcMap[key]={dmc:dmc,n:x.n,h:x.h,hexes:[x.h]};
-    }
-  });
-  var merged=Object.values(dmcMap).sort(function(a,b){return b.n-a.n;});
-  el.innerHTML=merged.map(function(x){
-    return '<div class="di"><div class="dd" style="background:'+x.dmc.hex+'"></div><div><div class="dn">DMC '+x.dmc.num+'</div><div class="dna">'+x.dmc.name+'</div></div><div class="dc">'+x.n+'</div></div>';
-  }).join('');
-}
-
-// Helper: merge palette entries with same DMC number
-function getMergedDMC(){
+// DMC — shared dedup helper used by all export functions
+function getDedupedFloss(){
   var cnt=new Array(palette.length).fill(0);
   for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
   var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
   var dmcMap={};
   sorted.forEach(function(x){
     var dmc=nDMC(x.h);
-    var key=String(dmc.num);
+    var key=(dmc.num==='--')?('hex:'+x.h):String(dmc.num);
     if(dmcMap[key]){dmcMap[key].n+=x.n;}
-    else{dmcMap[key]={dmc:dmc,n:x.n,h:x.dmc&&x.dmc.hex||x.h,i:x.i};}
+    else{dmcMap[key]={dmc:dmc,h:x.h,i:x.i,n:x.n};}
   });
   return Object.values(dmcMap).sort(function(a,b){return b.n-a.n;});
+}
+
+function updDMC(){
+  var el=document.getElementById('dlist');
+  var merged=getDedupedFloss();
+  if(!merged.length){el.innerHTML='<div style="color:#8a847c;font-size:11px">Convert an image first</div>';return;}
+  el.innerHTML=merged.map(function(x,idx){var sw=(x.dmc.num!=='--')?x.dmc.hex:x.h;return '<div class="di" id="dmc-row-'+x.i+'" style="cursor:pointer" onclick="SI='+x.i+';updPal();updSS()"><div class="dd" style="background:'+sw+'"></div><div><div class="dn">DMC '+x.dmc.num+'</div><div class="dna">'+x.dmc.name+'</div></div><div class="dc">'+x.n+'</div></div>';}).join('');
+}
+
+// Highlight matching DMC row and scroll into view when a palette color is selected
+function highlightDMC(palIdx){
+  // Remove old highlight
+  document.querySelectorAll('#dlist .di').forEach(function(el){
+    el.style.background='';el.style.borderLeft='';
+  });
+  // Find row with matching palette index
+  var row=document.getElementById('dmc-row-'+palIdx);
+  if(row){
+    row.style.background='#e8f5ee';
+    row.style.borderLeft='3px solid #2d6a4f';
+    row.scrollIntoView({block:'nearest',behavior:'smooth'});
+  }
 }
 
 // EXPORT FLOSS PNG
 function xFlossPNG(){
   if(!palette.length)return alert('Convert an image first');
-  var merged=getMergedDMC();
+  var merged=getDedupedFloss();
   var total=merged.reduce(function(s,x){return s+x.n;},0);
   var rH=28,hH=65,W=600,H=hH+merged.length*rH+20;
   var ec=document.createElement('canvas');ec.width=W;ec.height=H;
@@ -651,14 +702,18 @@ function xFlossPNG(){
   ex.fillStyle='#fff';ex.font='bold 18px serif';ex.textAlign='left';ex.fillText('Floss List for Crosses',16,32);
   ex.font='11px sans-serif';ex.fillStyle='#a8d5bf';ex.fillText('Use 2 strands of thread for cross stitch',16,50);
   var xs=[16,40,82,190,390,480];
-  ex.fillStyle='#f0f0f0';ex.fillRect(0,hH,W,rH);
+  ex.fillStyle='#fff';ex.fillRect(0,hH,W,H-hH); // pure white background for all rows
   ex.font='bold 10px sans-serif';ex.fillStyle='#555';
   ['N','Sym','DMC','Name','Stitches','%'].forEach(function(h,i){ex.fillText(h,xs[i],hH+17);});
   merged.forEach(function(x,idx){
     var y=hH+rH*(idx+1);var dmc=x.dmc;
-    if(idx%2===0){ex.fillStyle='#f9f9f9';ex.fillRect(0,y,W,rH);}
+    if(idx%2===0){ex.fillStyle='#f8f8f8';ex.fillRect(0,y,W,rH-1);}
     ex.fillStyle='#333';ex.font='10px sans-serif';ex.textAlign='left';ex.fillText(idx+1,xs[0],y+17);
-    ex.fillStyle=dmc.hex;ex.fillRect(xs[1],y+6,13,13);ex.strokeStyle='#ccc';ex.lineWidth=.5;ex.strokeRect(xs[1],y+6,13,13);
+    var swatchHex=(x.dmc.num!=='--')?x.dmc.hex:x.h;
+    // White isolation padding around swatch so pixel scanners don't confuse bg with swatch
+    ex.fillStyle='#ffffff';ex.fillRect(xs[1]-2,y+4,17,17);
+    ex.fillStyle=swatchHex;ex.fillRect(xs[1],y+6,13,13);
+    ex.strokeStyle='#999';ex.lineWidth=1;ex.strokeRect(xs[1],y+6,13,13);
     ex.fillStyle='#333';ex.font='bold 9px monospace';ex.textAlign='center';ex.fillText(SYM[x.i%SYM.length],xs[1]+6,y+17);
     ex.font='10px sans-serif';ex.textAlign='left';ex.fillText('DMC '+dmc.num,xs[2],y+17);
     ex.fillStyle='#555';ex.fillText(dmc.name.substring(0,26),xs[3],y+17);
@@ -672,9 +727,9 @@ function xFlossPNG(){
 // EXPORT FLOSS CSV
 function xFlossCSV(){
   if(!palette.length)return alert('Convert an image first');
-  var merged=getMergedDMC();
+  var merged=getDedupedFloss();
   var csv='N,Symbol,DMC,Name,Stitches,Hex\n';
-  merged.forEach(function(x,idx){csv+=idx+1+','+SYM[x.i%SYM.length]+',DMC '+x.dmc.num+','+x.dmc.name+','+x.n+','+x.dmc.hex+'\n';});
+  merged.forEach(function(x,idx){csv+=idx+1+','+SYM[x.i%SYM.length]+',DMC '+x.dmc.num+','+x.dmc.name+','+x.n+','+x.h+'\n';});
   var a=document.createElement('a');a.download='floss-list.csv';a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.click();
 }
 
@@ -1042,30 +1097,6 @@ function cvtRef(){
   }
   // Ensure we never exceed nc
   if(palette.length>nc)palette=palette.slice(0,nc);
-
-  // ── SNAP PALETTE TO DMC + DEDUPLICATE ───────────────────────────────────
-  // Replace each palette hex with the actual DMC hex colour it maps to,
-  // then collapse identical DMC entries so the grid never gets two palette
-  // slots that both point to the same DMC thread.
-  {
-    // Step A: convert every palette entry → its nearest DMC hex
-    var snapped=palette.map(function(h){ return nDMC(h).hex; });
-
-    // Step B: build a unique-DMC palette and a remapping table
-    var uniqueDMC=[];       // final palette (DMC hexes, no duplicates)
-    var remap=[];           // remap[oldIndex] = newIndex
-    var seen={};            // dmcHex → newIndex
-    for(var si=0;si<snapped.length;si++){
-      var sh=snapped[si].toLowerCase();
-      if(seen[sh]===undefined){
-        seen[sh]=uniqueDMC.length;
-        uniqueDMC.push(snapped[si]);
-      }
-      remap[si]=seen[sh];
-    }
-    palette=uniqueDMC;
-  }
-  // ────────────────────────────────────────────────────────────────────────
 
   pushH('Convert Image');
 
@@ -1623,18 +1654,17 @@ function xPDF(mode,size){
     doc.text('Pattern: '+COLS+' x '+ROWS+' stitches  |  Colors: '+palette.length,MARGIN,26);
     doc.text('Finished: '+wIn+'" x '+hIn+'"  ('+wCm+' x '+hCm+' cm)',MARGIN,33);
     doc.text('Fabric: '+document.getElementById('fab').options[document.getElementById('fab').selectedIndex].text,MARGIN,40);
-    // Preview image
+    // Preview image — same as Export PNG button output (full color pixel art)
     var prevC=document.createElement('canvas');
-    var sz2=Math.min(3,150/Math.max(COLS,ROWS));
-    prevC.width=Math.round(COLS*sz2);prevC.height=Math.round(ROWS*sz2);
+    prevC.width=COLS; prevC.height=ROWS;
     var px2=prevC.getContext('2d');
-    px2.fillStyle='#f8f5f0';px2.fillRect(0,0,prevC.width,prevC.height);
-    for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){var ci=grid[r][c];if(ci>=0&&ci<palette.length){px2.fillStyle=palette[ci];px2.fillRect(Math.round(c*sz2),Math.round(r*sz2),Math.ceil(sz2),Math.ceil(sz2));}}
-    var prevData=prevC.toDataURL('image/jpeg',0.9);
-    var maxW=A4W-MARGIN*2,maxH=A4H-55;
-    var sc=Math.min(maxW/prevC.width,maxH/prevC.height);
-    var pw=prevC.width*sc,ph=prevC.height*sc;
-    doc.addImage(prevData,'JPEG',(A4W-pw)/2,50,pw,ph);
+    px2.fillStyle='#f0ece3'; px2.fillRect(0,0,COLS,ROWS);
+    for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){var ci=grid[r][c];if(ci>=0&&ci<palette.length){px2.fillStyle=palette[ci];px2.fillRect(c,r,1,1);}}
+    var prevData=prevC.toDataURL('image/png');
+    var maxW=A4W-MARGIN*2, maxH=A4H-55;
+    var sc=Math.min(maxW/prevC.width, maxH/prevC.height);
+    var pw=prevC.width*sc, ph=prevC.height*sc;
+    doc.addImage(prevData,'PNG',(A4W-pw)/2,50,pw,ph);
 
     // โ”€โ”€ CHART PAGES (vector drawn) โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     var blocksX,blocksY;
