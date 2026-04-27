@@ -605,17 +605,45 @@ function updDMC(){
   var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
   var el=document.getElementById('dlist');
   if(!sorted.length){el.innerHTML='<div style="color:#8a847c;font-size:11px">Convert an image first</div>';return;}
-  el.innerHTML=sorted.map(function(x){var dmc=nDMC(x.h);return '<div class="di"><div class="dd" style="background:'+x.h+'"></div><div><div class="dn">DMC '+dmc.num+'</div><div class="dna">'+dmc.name+'</div></div><div class="dc">'+x.n+'</div></div>';}).join('');
+  // Merge palette entries that map to the same DMC number
+  var dmcMap={};
+  sorted.forEach(function(x){
+    var dmc=nDMC(x.h);
+    var key=String(dmc.num);
+    if(dmcMap[key]){
+      dmcMap[key].n+=x.n;
+      dmcMap[key].hexes.push(x.h);
+    } else {
+      dmcMap[key]={dmc:dmc,n:x.n,h:x.h,hexes:[x.h]};
+    }
+  });
+  var merged=Object.values(dmcMap).sort(function(a,b){return b.n-a.n;});
+  el.innerHTML=merged.map(function(x){
+    return '<div class="di"><div class="dd" style="background:'+x.dmc.hex+'"></div><div><div class="dn">DMC '+x.dmc.num+'</div><div class="dna">'+x.dmc.name+'</div></div><div class="dc">'+x.n+'</div></div>';
+  }).join('');
+}
+
+// Helper: merge palette entries with same DMC number
+function getMergedDMC(){
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+  var dmcMap={};
+  sorted.forEach(function(x){
+    var dmc=nDMC(x.h);
+    var key=String(dmc.num);
+    if(dmcMap[key]){dmcMap[key].n+=x.n;}
+    else{dmcMap[key]={dmc:dmc,n:x.n,h:x.dmc&&x.dmc.hex||x.h,i:x.i};}
+  });
+  return Object.values(dmcMap).sort(function(a,b){return b.n-a.n;});
 }
 
 // EXPORT FLOSS PNG
 function xFlossPNG(){
   if(!palette.length)return alert('Convert an image first');
-  var cnt=new Array(palette.length).fill(0);
-  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
-  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
-  var total=sorted.reduce(function(s,x){return s+x.n;},0);
-  var rH=28,hH=65,W=600,H=hH+sorted.length*rH+20;
+  var merged=getMergedDMC();
+  var total=merged.reduce(function(s,x){return s+x.n;},0);
+  var rH=28,hH=65,W=600,H=hH+merged.length*rH+20;
   var ec=document.createElement('canvas');ec.width=W;ec.height=H;
   var ex=ec.getContext('2d');
   ex.fillStyle='#fff';ex.fillRect(0,0,W,H);
@@ -626,11 +654,11 @@ function xFlossPNG(){
   ex.fillStyle='#f0f0f0';ex.fillRect(0,hH,W,rH);
   ex.font='bold 10px sans-serif';ex.fillStyle='#555';
   ['N','Sym','DMC','Name','Stitches','%'].forEach(function(h,i){ex.fillText(h,xs[i],hH+17);});
-  sorted.forEach(function(x,idx){
-    var y=hH+rH*(idx+1);var dmc=nDMC(x.h);
+  merged.forEach(function(x,idx){
+    var y=hH+rH*(idx+1);var dmc=x.dmc;
     if(idx%2===0){ex.fillStyle='#f9f9f9';ex.fillRect(0,y,W,rH);}
     ex.fillStyle='#333';ex.font='10px sans-serif';ex.textAlign='left';ex.fillText(idx+1,xs[0],y+17);
-    ex.fillStyle=x.h;ex.fillRect(xs[1],y+6,13,13);ex.strokeStyle='#ccc';ex.lineWidth=.5;ex.strokeRect(xs[1],y+6,13,13);
+    ex.fillStyle=dmc.hex;ex.fillRect(xs[1],y+6,13,13);ex.strokeStyle='#ccc';ex.lineWidth=.5;ex.strokeRect(xs[1],y+6,13,13);
     ex.fillStyle='#333';ex.font='bold 9px monospace';ex.textAlign='center';ex.fillText(SYM[x.i%SYM.length],xs[1]+6,y+17);
     ex.font='10px sans-serif';ex.textAlign='left';ex.fillText('DMC '+dmc.num,xs[2],y+17);
     ex.fillStyle='#555';ex.fillText(dmc.name.substring(0,26),xs[3],y+17);
@@ -644,11 +672,9 @@ function xFlossPNG(){
 // EXPORT FLOSS CSV
 function xFlossCSV(){
   if(!palette.length)return alert('Convert an image first');
-  var cnt=new Array(palette.length).fill(0);
-  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
-  var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+  var merged=getMergedDMC();
   var csv='N,Symbol,DMC,Name,Stitches,Hex\n';
-  sorted.forEach(function(x,idx){var dmc=nDMC(x.h);csv+=idx+1+','+SYM[x.i%SYM.length]+',DMC '+dmc.num+','+dmc.name+','+x.n+','+x.h+'\n';});
+  merged.forEach(function(x,idx){csv+=idx+1+','+SYM[x.i%SYM.length]+',DMC '+x.dmc.num+','+x.dmc.name+','+x.n+','+x.dmc.hex+'\n';});
   var a=document.createElement('a');a.download='floss-list.csv';a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.click();
 }
 
