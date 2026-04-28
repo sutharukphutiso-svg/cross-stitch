@@ -268,13 +268,27 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 
 <script>
 // SYMBOLS
-var SYM=[
-  // Shapes drawn with ASCII - all render perfectly in jsPDF
+var SYM_BASE=[
   'o','O','*','@','#','%','+','=','-','|',
   '/','\\','<','>','(',')','^','~','[',']',
   '&','$','!','?','8','0','T','Y','X','Z',
-  'S','L','7','3','V','W','N','M','H','K'
+  'S','L','7','3','V','W','N','M','H','K',
+  '1','2','4','5','6','9','A','B','C','D',
+  'E','F','G','I','J','P','Q','R','U',':',
+  ';','.','_','{','}','`','a','b','c','d',
+  'e','f','g','h','i','j','k','l','m','n',
+  'p','q','r','s','t','u','v','w','x','y','z'
 ];
+// getSYM(i): unique symbol for any palette index — supports 200+ colors
+// i < 91  → single char from SYM_BASE
+// i >= 91 → 2-char: base + suffix number (o1, O1, ... o2, O2, ...)
+function getSYM(i){
+  if(i<SYM_BASE.length)return SYM_BASE[i];
+  var j=i-SYM_BASE.length;
+  var suffix=Math.floor(j/SYM_BASE.length)+1;
+  return SYM_BASE[j%SYM_BASE.length]+suffix;
+}
+var SYM=SYM_BASE; // keep SYM for legacy references
 
 // DMC DATABASE - Full 454 colors
 var DMC=[
@@ -441,7 +455,37 @@ function h2r(h){var m=h.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);ret
 function r2h(r,g,b){return'#'+[r,g,b].map(function(v){return Math.round(v).toString(16).padStart(2,'0');}).join('');}
 function nRgb(px,pal){var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var d=Math.pow(px[0]-pal[i][0],2)+Math.pow(px[1]-pal[i][1],2)+Math.pow(px[2]-pal[i][2],2);if(d<bd){bd=d;b=i;}}return b;}
 function nHex(px,pal){var lab=rgb2lab(px[0],px[1],px[2]);var b=0,bd=1e9;for(var i=0;i<pal.length;i++){var rgb=h2r(pal[i]);if(!rgb)continue;var pl=rgb2lab(rgb[0],rgb[1],rgb[2]);var d=Math.pow(lab[0]-pl[0],2)+Math.pow(lab[1]-pl[1],2)+Math.pow(lab[2]-pl[2],2);if(d<bd){bd=d;b=i;}}return b;}
-function nDMC(hex){var rgb=h2r(hex);if(!rgb)return{num:'--',name:'Unknown',hex:hex};var lab=rgb2lab(rgb[0],rgb[1],rgb[2]);var b=null,bd=1e9;for(var i=0;i<DMC.length;i++){var e=DMC[i];var el=rgb2lab(e[2],e[3],e[4]);var d=Math.pow(lab[0]-el[0],2)+Math.pow(lab[1]-el[1],2)+Math.pow(lab[2]-el[2],2);if(d<bd){bd=d;b={num:e[0],name:e[1],hex:r2h(e[2],e[3],e[4])};}}return b||{num:'--',name:'Unknown',hex:hex};}
+// DMC assignment cache — reset every time floss list is rebuilt
+var _dmcCache={};      // hex -> assigned DMC
+var _dmcUsed={};       // dmcNum -> true (already taken)
+
+// Call this before building floss list to reset assignments
+function resetDMCCache(){_dmcCache={};_dmcUsed={};}
+
+// nDMC: find best DMC for a hex color, never reusing a DMC already assigned
+function nDMC(hex){
+  if(_dmcCache[hex])return _dmcCache[hex];
+  var rgb=h2r(hex);
+  if(!rgb)return{num:'--',name:'Unknown',hex:hex};
+  var lab=rgb2lab(rgb[0],rgb[1],rgb[2]);
+  // Sort all DMC by LAB distance, pick the closest one not yet used
+  var scored=[];
+  for(var i=0;i<DMC.length;i++){
+    var e=DMC[i];
+    var el=rgb2lab(e[2],e[3],e[4]);
+    var d=Math.pow(lab[0]-el[0],2)+Math.pow(lab[1]-el[1],2)+Math.pow(lab[2]-el[2],2);
+    scored.push({d:d,num:e[0],name:e[1],hex:r2h(e[2],e[3],e[4])});
+  }
+  scored.sort(function(a,b){return a.d-b.d;});
+  var result=null;
+  for(var j=0;j<scored.length;j++){
+    if(!_dmcUsed[scored[j].num]){result=scored[j];break;}
+  }
+  if(!result)result=scored[0]; // fallback: all used, pick closest anyway
+  _dmcUsed[result.num]=true;
+  _dmcCache[hex]=result;
+  return result;
+}
 function inB(c,r){return c>=0&&c<COLS&&r>=0&&r<ROWS;}
 function getCell(e){var rc=gc.getBoundingClientRect();var ds=Math.max(0.1,CELL*ZL);return[Math.floor((e.clientX-rc.left)/ds+VX),Math.floor((e.clientY-rc.top)/ds+VY)];}
 
@@ -474,7 +518,7 @@ function render(){
           var lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
           ctx.fillStyle=lum>140?'rgba(0,0,0,.6)':'rgba(255,255,255,.8)';
           ctx.font=Math.max(6,ds-3)+'px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
-          ctx.fillText(SYM[ci%SYM.length],px+ds/2,py+ds/2);
+          ctx.fillText(getSYM(ci),px+ds/2,py+ds/2);
         }
       }
       if(sg&&ds>=3){ctx.strokeStyle='rgba(100,100,100,.18)';ctx.lineWidth=.5;ctx.strokeRect(px,py,ds,ds);}
@@ -652,7 +696,14 @@ document.addEventListener('click',function(e){
   if(!el.contains(e.target))cpX();
 });
 
-// DMC — shared dedup helper used by all export functions
+// getSortedFloss: all palette entries sorted by stitch count (NO dedup — preserves all 80 colors)
+function getSortedFloss(){
+  var cnt=new Array(palette.length).fill(0);
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
+  return palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+}
+
+// getDedupedFloss: merges palette entries that share same DMC number (kept for reference only)
 function getDedupedFloss(){
   var cnt=new Array(palette.length).fill(0);
   for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)if(grid[r][c]>=0)cnt[grid[r][c]]++;
@@ -668,10 +719,11 @@ function getDedupedFloss(){
 }
 
 function updDMC(){
+  resetDMCCache();
   var el=document.getElementById('dlist');
-  var merged=getDedupedFloss();
-  if(!merged.length){el.innerHTML='<div style="color:#8a847c;font-size:11px">Convert an image first</div>';return;}
-  el.innerHTML=merged.map(function(x,idx){var sw=(x.dmc.num!=='--')?x.dmc.hex:x.h;return '<div class="di" id="dmc-row-'+x.i+'" style="cursor:pointer" onclick="SI='+x.i+';updPal();updSS()"><div class="dd" style="background:'+sw+'"></div><div><div class="dn">DMC '+x.dmc.num+'</div><div class="dna">'+x.dmc.name+'</div></div><div class="dc">'+x.n+'</div></div>';}).join('');
+  var list=getSortedFloss();
+  if(!list.length){el.innerHTML='<div style="color:#8a847c;font-size:11px">Convert an image first</div>';return;}
+  el.innerHTML=list.map(function(x){var dmc=nDMC(x.h);var sw=(dmc.num!=='--')?dmc.hex:x.h;return '<div class="di" id="dmc-row-'+x.i+'" style="cursor:pointer" onclick="SI='+x.i+';updPal();updSS();highlightDMC('+x.i+')"><div class="dd" style="background:'+sw+'"></div><div><div class="dn">DMC '+dmc.num+'</div><div class="dna">'+dmc.name+'</div></div><div class="dc">'+x.n+'</div></div>';}).join('');
 }
 
 // Highlight matching DMC row and scroll into view when a palette color is selected
@@ -691,8 +743,9 @@ function highlightDMC(palIdx){
 
 // EXPORT FLOSS PNG
 function xFlossPNG(){
+  resetDMCCache();
   if(!palette.length)return alert('Convert an image first');
-  var merged=getDedupedFloss();
+  var merged=getSortedFloss();
   var total=merged.reduce(function(s,x){return s+x.n;},0);
   var rH=28,hH=65,W=600,H=hH+merged.length*rH+20;
   var ec=document.createElement('canvas');ec.width=W;ec.height=H;
@@ -706,15 +759,15 @@ function xFlossPNG(){
   ex.font='bold 10px sans-serif';ex.fillStyle='#555';
   ['N','Sym','DMC','Name','Stitches','%'].forEach(function(h,i){ex.fillText(h,xs[i],hH+17);});
   merged.forEach(function(x,idx){
-    var y=hH+rH*(idx+1);var dmc=x.dmc;
+    var y=hH+rH*(idx+1);var dmc=nDMC(x.h);
     if(idx%2===0){ex.fillStyle='#f8f8f8';ex.fillRect(0,y,W,rH-1);}
     ex.fillStyle='#333';ex.font='10px sans-serif';ex.textAlign='left';ex.fillText(idx+1,xs[0],y+17);
-    var swatchHex=(x.dmc.num!=='--')?x.dmc.hex:x.h;
+    var swatchHex=(dmc.num!=='--')?dmc.hex:x.h;
     // White isolation padding around swatch so pixel scanners don't confuse bg with swatch
     ex.fillStyle='#ffffff';ex.fillRect(xs[1]-2,y+4,17,17);
     ex.fillStyle=swatchHex;ex.fillRect(xs[1],y+6,13,13);
     ex.strokeStyle='#999';ex.lineWidth=1;ex.strokeRect(xs[1],y+6,13,13);
-    ex.fillStyle='#333';ex.font='bold 9px monospace';ex.textAlign='center';ex.fillText(SYM[x.i%SYM.length],xs[1]+6,y+17);
+    ex.fillStyle='#333';ex.font='bold 9px monospace';ex.textAlign='center';ex.fillText(getSYM(x.i),xs[1]+6,y+17);
     ex.font='10px sans-serif';ex.textAlign='left';ex.fillText('DMC '+dmc.num,xs[2],y+17);
     ex.fillStyle='#555';ex.fillText(dmc.name.substring(0,26),xs[3],y+17);
     ex.fillStyle='#333';ex.textAlign='right';ex.fillText(x.n.toLocaleString(),xs[4]+50,y+17);
@@ -726,10 +779,11 @@ function xFlossPNG(){
 
 // EXPORT FLOSS CSV
 function xFlossCSV(){
+  resetDMCCache();
   if(!palette.length)return alert('Convert an image first');
-  var merged=getDedupedFloss();
+  var merged=getSortedFloss();
   var csv='N,Symbol,DMC,Name,Stitches,Hex\n';
-  merged.forEach(function(x,idx){csv+=idx+1+','+SYM[x.i%SYM.length]+',DMC '+x.dmc.num+','+x.dmc.name+','+x.n+','+x.h+'\n';});
+  merged.forEach(function(x,idx){var dmc=nDMC(x.h);csv+=idx+1+','+getSYM(x.i)+',DMC '+dmc.num+','+dmc.name+','+x.n+','+x.h+'\n';});
   var a=document.createElement('a');a.download='floss-list.csv';a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.click();
 }
 
@@ -774,7 +828,7 @@ function xChart(){
       ex.fillStyle=palette[ci];ex.fillRect(px,py,sz,sz);
       var rgb=h2r(palette[ci]);var lum=rgb?0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2]:128;
       ex.fillStyle=lum>140?'#000':'#fff';ex.font=(sz-3)+'px monospace';ex.textAlign='center';ex.textBaseline='middle';
-      ex.fillText(SYM[ci%SYM.length],px+sz/2,py+sz/2);
+      ex.fillText(getSYM(ci),px+sz/2,py+sz/2);
     }
     ex.strokeStyle='rgba(0,0,0,.1)';ex.lineWidth=.4;ex.strokeRect(px,py,sz,sz);
   }
@@ -1600,7 +1654,7 @@ function makePatternCanvas(mode,cellSz){
           ex.fillStyle=lum2>140?'rgba(0,0,0,0.65)':'rgba(255,255,255,0.85)';
           ex.font=Math.max(5,cellSz-3)+'px monospace';
           ex.textAlign='center';ex.textBaseline='middle';
-          ex.fillText(SYM[ci%SYM.length],px+cellSz/2,py+cellSz/2);
+          ex.fillText(getSYM(ci),px+cellSz/2,py+cellSz/2);
         }
       }
       ex.strokeStyle='rgba(0,0,0,0.12)';ex.lineWidth=0.3;ex.strokeRect(px,py,cellSz,cellSz);
@@ -1628,6 +1682,7 @@ function makePreviewCanvas(){
 }
 
 function xPDF(mode,size){
+  resetDMCCache();
   if(!palette.length||!grid.flat().some(function(v){return v>=0;}))return alert('Please convert an image first');
   loadJsPDF(function(){
     var jsPDF=window.jspdf.jsPDF;
@@ -1639,10 +1694,11 @@ function xPDF(mode,size){
     var sizeTxt={'S':'Small (1 page)','M':'Medium (2 pages)','L':'Large (4 pages)','XL':'XL (9 pages)'}[size];
     var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
 
-    // Count colors
+    // Count colors — use getDedupedFloss so count matches all exports
     var cnt=new Array(palette.length).fill(0);
     for(var ri=0;ri<ROWS;ri++)for(var ci2=0;ci2<COLS;ci2++)if(grid[ri][ci2]>=0)cnt[grid[ri][ci2]]++;
     var sorted=palette.map(function(h,i){return{h:h,i:i,n:cnt[i]};}).filter(function(x){return x.n>0;}).sort(function(a,b){return b.n-a.n;});
+    var dedupedCount=getSortedFloss().length;
 
     // โ”€โ”€ PAGE 1: Cover โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
     doc.setFillColor(45,106,79);doc.rect(0,0,A4W,18,'F');
@@ -1651,7 +1707,7 @@ function xPDF(mode,size){
     doc.setFontSize(9);doc.setFont(undefined,'normal');
     doc.text(modeTxt+' | '+sizeTxt,A4W-MARGIN,12,{align:'right'});
     doc.setTextColor(60,60,60);doc.setFontSize(9);
-    doc.text('Pattern: '+COLS+' x '+ROWS+' stitches  |  Colors: '+palette.length,MARGIN,26);
+    doc.text('Pattern: '+COLS+' x '+ROWS+' stitches  |  Colors: '+dedupedCount,MARGIN,26);
     doc.text('Finished: '+wIn+'" x '+hIn+'"  ('+wCm+' x '+hCm+' cm)',MARGIN,33);
     doc.text('Fabric: '+document.getElementById('fab').options[document.getElementById('fab').selectedIndex].text,MARGIN,40);
     // Preview image — same as Export PNG button output (full color pixel art)
@@ -1728,7 +1784,7 @@ function xPDF(mode,size){
               doc.setTextColor(0,0,0);
               doc.setFontSize(cell*2.2);
               doc.setFont(undefined,'bold');
-              doc.text(SYM[gi%SYM.length],cx+cell*0.5,cy+cell*0.78,{align:'center'});
+              doc.text(getSYM(gi),cx+cell*0.5,cy+cell*0.78,{align:'center'});
             }
 
             // Cell border
@@ -1776,7 +1832,9 @@ function xPDF(mode,size){
     doc.text('Finished: '+wIn+'" x '+hIn+'"  ('+wCm+' x '+hCm+' cm)',A4W-MARGIN,9,{align:'right'});
 
     var legY=22,rowH=7;
-    var total=sorted.reduce(function(s,x){return s+x.n;},0);
+    // Use getDedupedFloss() — same as floss-list PNG/CSV — so all exports match
+    var legendList=getSortedFloss();
+    var total=legendList.reduce(function(s,x){return s+x.n;},0);
     var cols2=[MARGIN,MARGIN+8,MARGIN+18,MARGIN+28,MARGIN+80,MARGIN+128,MARGIN+158];
 
     // Header row
@@ -1785,13 +1843,14 @@ function xPDF(mode,size){
     ['N','Sym','','DMC','Name','Stitches','%'].forEach(function(h,i){doc.text(h,cols2[i],legY);});
     legY+=rowH-1;
 
-    sorted.forEach(function(x,idx){
+    legendList.forEach(function(x,idx){
       if(legY>A4H-12){doc.addPage();legY=15;}
       if(idx%2===0){doc.setFillColor(250,249,247);doc.rect(MARGIN,legY-4,A4W-MARGIN*2,rowH,'F');}
       var dmc=nDMC(x.h);
-      var rgb=h2r(x.h)||[200,200,200];
+      var swatchHex=(dmc.num!=='--')?dmc.hex:x.h;
+      var rgb=h2r(swatchHex)||[200,200,200];
 
-      // Color swatch
+      // Color swatch (DMC official color)
       doc.setFillColor(rgb[0],rgb[1],rgb[2]);
       doc.rect(cols2[2],legY-3.5,5,5,'F');
       doc.setDrawColor(160,160,160);doc.setLineWidth(0.2);doc.rect(cols2[2],legY-3.5,5,5);
@@ -1800,7 +1859,7 @@ function xPDF(mode,size){
       doc.setFillColor(245,245,245);doc.rect(cols2[1]-1,legY-3.5,6,5,'F');
       doc.setDrawColor(180,180,180);doc.setLineWidth(0.2);doc.rect(cols2[1]-1,legY-3.5,6,5);
       doc.setTextColor(0,0,0);doc.setFontSize(6);doc.setFont(undefined,'bold');
-      doc.text(SYM[x.i%SYM.length],cols2[1]+2,legY,{align:'center'});
+      doc.text(getSYM(x.i),cols2[1]+2,legY,{align:'center'});
 
       doc.setTextColor(30,30,30);doc.setFont(undefined,'normal');doc.setFontSize(7);
       doc.text(String(idx+1),cols2[0],legY);
@@ -1864,7 +1923,7 @@ function xFlossLengthPDF(){
       doc.setDrawColor(180,180,180);doc.setLineWidth(0.2);doc.rect(cols2[2],legY-3.5,5,5,'S');
       doc.setTextColor(30,30,30);doc.setFont(undefined,'normal');doc.setFontSize(7);
       doc.text(String(idx+1),cols2[0],legY);
-      doc.text(SYM[x.i%SYM.length],cols2[1],legY);
+      doc.text(getSYM(x.i),cols2[1],legY);
       doc.text('DMC '+String(dmc.num),cols2[3],legY);
       doc.text(dmc.name.substring(0,26),cols2[4],legY);
       doc.text(x.n.toLocaleString(),cols2[5],legY);
@@ -1937,7 +1996,7 @@ function xPatternKeeper(){
             ex.font='bold '+(PX-2)+'px monospace';
             ex.textAlign='center';
             ex.textBaseline='middle';
-            ex.fillText(SYM[gi%SYM.length],cx+PX/2,cy+PX/2);
+            ex.fillText(getSYM(gi),cx+PX/2,cy+PX/2);
           }
           ex.strokeStyle='rgba(150,150,150,0.5)';
           ex.lineWidth=0.3;
@@ -2031,7 +2090,7 @@ function xPatternKeeper(){
       doc.setDrawColor(130,130,130);doc.setLineWidth(0.15);
       doc.rect(ox3+hx[0],legY-3.5,7,4.5);
       doc.setFontSize(6);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
-      doc.text(SYM[x.i%SYM.length],ox3+hx[0]+3.5,legY,{align:'center'});
+      doc.text(getSYM(x.i),ox3+hx[0]+3.5,legY,{align:'center'});
 
       doc.setFont(undefined,'normal');doc.setFontSize(6);
       doc.text('DMC '+String(dmc.num),ox3+hx[1],legY);
